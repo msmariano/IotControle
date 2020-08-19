@@ -32,56 +32,94 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        IbOnOff = (ImageButton) findViewById(R.id.btOnOff);
+        IbOnOff =  findViewById(R.id.btOnOff);
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitNetwork().build();
         StrictMode.setThreadPolicy(policy);
         status = Status.OFF;
+        envia(gerarConectorJson(Status.LOGINWITHCOMMAND,true));
 
         IbOnOff.setOnClickListener(new View.OnClickListener()
         {
             public void onClick (View v)
             {
-                try {
-                    Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-                    InetAddress serverEnd = InetAddress.getByName("192.168.0.146");
-                    Socket socket = new Socket(serverEnd,27015);
-                    Conector conector = new Conector();
-                    Iot iot = new Iot();
-                    conector.setIot(iot);
-                    iot.setId("0");
-                    iot.setName("ControlePilotoPradoVelho");
-                    ButtonIot buttonIot = new ButtonIot();
-                    buttonIot.setButtonID(1);
-                    buttonIot.setStatus(status);
-                    if(status.equals(Status.OFF))
-                        status = Status.ON;
-                    else
-                        status = Status.OFF;
-                    buttonIot.setTecla(Status.OUT);
-                    List<ButtonIot> botoes = new ArrayList<ButtonIot>();
-                    botoes.add(buttonIot);
-                    iot.setjSon(gson.toJson(botoes));
-                    conector.setId("0");
-                    conector.setTipo(TipoIOT.HUMAN);
-                    conector.setSenha("M@r0403");
-                    conector.setUsuario("Matinhos");
-                    conector.setStatus(Status.LOGINWITHCOMMAND);
-                    String jSon = gson.toJson(conector);
-                    PrintWriter out = new PrintWriter(
-                            new BufferedWriter(new OutputStreamWriter(
-                                    socket.getOutputStream())), true);
-                    out.println(jSon);
-                    BufferedReader in = new BufferedReader(
-                            new InputStreamReader(socket.getInputStream()));
-                    jSon = in.readLine();
-                    conector = gson.fromJson(jSon, Conector.class);
-                    Toast.makeText(getApplicationContext(), conector.getId(), Toast.LENGTH_LONG).show();
-                    socket.close();
-                } catch (IOException e) {
-                    Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
-                    Log.e("NETWORK-RECEIVE", "Something goes wrong: IOException", e);
-                }
+                envia(gerarConectorJson(Status.LOGINWITHCOMMAND,false));
             }
         });
+    }
+
+    public String gerarBotoesJson(boolean bRead){
+        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+        ButtonIot buttonIot = new ButtonIot();
+        buttonIot.setButtonID(1);
+
+        if(!bRead) {
+            buttonIot.setStatus(Status.OUT);
+            if (status.equals(Status.OFF))
+                status = Status.ON;
+            else
+                status = Status.OFF;
+            buttonIot.setTecla(status);
+        }
+        else{
+            buttonIot.setStatus(Status.READ);
+            buttonIot.setTecla(Status.NA);
+        }
+
+        List<ButtonIot> botoes = new ArrayList<>();
+        botoes.add(buttonIot);
+        return gson.toJson(botoes);
+    }
+
+    public Iot gerarIot(boolean bRead){
+        Iot iot = new Iot();
+        iot.setId("0");
+        iot.setName("ControlePilotoPradoVelho");
+        iot.setjSon(gerarBotoesJson(bRead));
+        return iot;
+    }
+
+    public String gerarConectorJson(Status sEnvio,boolean bRead){
+        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+        Conector conector = new Conector();
+        conector.setIot(gerarIot(bRead));
+        conector.setId("0");
+        conector.setTipo(TipoIOT.HUMAN);
+        conector.setNome("ControleCelularMarcelo");
+        conector.setSenha("M@r0403");
+        conector.setUsuario("Matinhos");
+        conector.setStatus(sEnvio);
+       return gson.toJson(conector);
+    }
+
+    public void trataRetorno(String jSonRetorno){
+        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+        Conector conector = gson.fromJson(jSonRetorno, Conector.class);
+        if(conector.getStatus().equals(Status.RETORNO)) {
+            if(conector.getIot().getjSon()!=null){
+                ButtonIot buttonIot = gson.fromJson(conector.getIot().getjSon(),ButtonIot.class);
+                status = buttonIot.getStatus();
+                Toast.makeText(getApplicationContext(), status.toString(), Toast.LENGTH_LONG).show();
+            }
+            //Toast.makeText(getApplicationContext(), conector.getIot().getjSon(), Toast.LENGTH_LONG).show();
+            Toast.makeText(getApplicationContext(), conector.getId(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void envia(String textJson){
+        try {
+            InetAddress serverEnd = InetAddress.getByName("192.168.0.146");
+            Socket socket = new Socket(serverEnd,27015);
+            PrintWriter out = new PrintWriter(
+                    new BufferedWriter(new OutputStreamWriter(
+                            socket.getOutputStream())), true);
+            out.println(textJson);
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream()));
+            trataRetorno(in.readLine());
+            socket.close();
+        } catch (IOException e) {
+            Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+            Log.e("NETWORK-RECEIVE", "Something goes wrong: IOException", e);
+        }
     }
 }
