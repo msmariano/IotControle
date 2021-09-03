@@ -2,6 +2,7 @@ package com.projetos.marcelo.iotcontrole;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.widget.Button;
@@ -23,20 +24,49 @@ public class MainActivity extends AppCompatActivity {
         String nomes[] = {"Garagem","Cozinha"};
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        botoes = new ArrayList<ControleBotao>();
-        ConfigBotao cfg = new ConfigBotao();
-        cfg.setAct(this);
-        cfg.setNomeIot("CasaMatinhos_Interno");
-        cfg.setNomeIOTCom("CelularMarcelo");
-        cfg.setServidor("192.168.0.254");
-        cfg.setPortaServidor(27015);
-        cfg.setUsuario("Matinhos");
-        cfg.setSenha("M@r0403");
-        cfg.setLog(null);
-        cfg.setLinear((LinearLayout) findViewById(R.id.lLayout));
-        for(int i=0 ;i < nomes.length;i++){
-            ControleBotao botao = new ControleBotao(nomes[i],cfg,i+1);
-            botoes.add(botao);
+        Button btCfg = findViewById(R.id.bCfg);
+        btCfg.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, MainActivity2.class);
+                startActivity(intent);
+            }
+        });
+
+        List<Parametro> parametros = Parametro.findWithQuery(Parametro.class,"SELECT * FROM Parametro");
+        if(parametros.size()>0) {
+            botoes = new ArrayList<ControleBotao>();
+            ConfigBotao cfg = new ConfigBotao();
+            Integer tParametros = 0;
+            for (Parametro parametro : parametros) {
+                if (parametro.getParametro().equals("EndServidor")) {
+                    if(parametro.getCampo1()!=null&&parametro.getCampo1().trim().length()>0) {
+                        cfg.setServidor(parametro.getCampo1());
+                        tParametros++;
+                    }
+                    if(parametro.getCampo2()!=null&&parametro.getCampo2().trim().length()>0) {
+                        try {
+                            cfg.setPortaServidor (Integer.parseInt(parametro.getCampo2())) ;
+                            tParametros++;
+                        }
+                        catch (Exception e){
+                        }
+                    }
+                }
+            }
+
+            if(tParametros==2) {
+                cfg.setAct(this);
+                cfg.setNomeIot("CasaMatinhos_Interno");
+                cfg.setNomeIOTCom("CelularMarcelo");
+                cfg.setUsuario("Matinhos");
+                cfg.setSenha("M@r0403");
+                cfg.setLog(null);
+                cfg.setLinear((LinearLayout) findViewById(R.id.lLayout));
+                for (int i = 0; i < nomes.length; i++) {
+                    ControleBotao botao = new ControleBotao(nomes[i], cfg, i + 1);
+                    botoes.add(botao);
+                }
+            }
         }
     }
 

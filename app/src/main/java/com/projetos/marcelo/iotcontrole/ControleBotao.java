@@ -135,8 +135,16 @@ public class ControleBotao extends AsyncTask {
         new Thread() {
             @Override
             public void run() {
-                cfg.getAct().runOnUiThread(() -> btn.setBackgroundColor(Color.parseColor("#ff00ff")));
-                envia(gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeIot(), buttonID));
+               cfg.getAct().runOnUiThread(() -> btn.setBackgroundColor(Color.parseColor("#ff00ff")));
+               while(true) {
+                   envia(gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeIot(), buttonID));
+                   try {
+                       Thread.sleep(5000);
+                   }
+                   catch (Exception e){
+
+                   }
+               }
             }
         }.start();
     }
