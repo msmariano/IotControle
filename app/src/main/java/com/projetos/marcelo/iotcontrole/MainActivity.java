@@ -52,6 +52,9 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
                 }
+                if (parametro.getParametro().equals("NomeIotSel")) {
+
+                }
             }
 
             if(tParametros==2) {
