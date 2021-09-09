@@ -1,41 +1,35 @@
 package com.projetos.marcelo.iotcontrole;
 
-import android.widget.EditText;
-import android.widget.LinearLayout;
+import com.orm.SugarRecord;
 
-import androidx.appcompat.app.AppCompatActivity;
+public class ConfigBotao extends SugarRecord<ConfigBotao> {
 
-public class ConfigBotao {
 
-    private AppCompatActivity act;
     private String servidor;
     private Integer portaServidor;
-    private EditText log;
-    private LinearLayout linear;
+    private String usuario;
+    private String senha;
+    private String nomeIOTCom;
+    private String nomeIot;
+    private String nomeBotao;
+    private Integer idBotao;
 
-    public LinearLayout getLinear() {
-        return linear;
+    public String getNomeBotao() {
+        return nomeBotao;
     }
 
-    public void setLinear(LinearLayout linear) {
-        this.linear = linear;
+    public void setNomeBotao(String nomeBotao) {
+        this.nomeBotao = nomeBotao;
     }
 
-    public EditText getLog() {
-        return log;
+    public Integer getIdBotao() {
+        return idBotao;
     }
 
-    public void setLog(EditText log) {
-        this.log = log;
+    public void setIdBotao(Integer idBotao) {
+        this.idBotao = idBotao;
     }
 
-    public AppCompatActivity getAct() {
-        return act;
-    }
-
-    public void setAct(AppCompatActivity act) {
-        this.act = act;
-    }
 
     public String getServidor() {
         return servidor;
@@ -77,10 +71,6 @@ public class ConfigBotao {
         this.nomeIOTCom = nomeIOTCom;
     }
 
-    private String usuario;
-    private String senha;
-    private String nomeIOTCom;
-
     public String getNomeIot() {
         return nomeIot;
     }
@@ -89,5 +79,5 @@ public class ConfigBotao {
         this.nomeIot = nomeIot;
     }
 
-    private String nomeIot;
+
 }

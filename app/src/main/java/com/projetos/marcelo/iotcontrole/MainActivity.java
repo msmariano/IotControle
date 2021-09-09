@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
         String nomes[] = {"Garagem","Cozinha"};
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        this.setTitle("Controle Marcelo");
         Button btCfg = findViewById(R.id.bCfg);
         btCfg.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
@@ -53,20 +54,19 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 if (parametro.getParametro().equals("NomeIotSel")) {
-
+                    cfg.setNomeIot(parametro.getCampo1());
+                    tParametros++;
                 }
             }
 
-            if(tParametros==2) {
-                cfg.setAct(this);
+            if(tParametros==3) {
                 cfg.setNomeIot("CasaMatinhos_Interno");
                 cfg.setNomeIOTCom("CelularMarcelo");
                 cfg.setUsuario("Matinhos");
                 cfg.setSenha("M@r0403");
-                cfg.setLog(null);
-                cfg.setLinear((LinearLayout) findViewById(R.id.lLayout));
                 for (int i = 0; i < nomes.length; i++) {
-                    ControleBotao botao = new ControleBotao(nomes[i], cfg, i + 1);
+                    ControleBotao botao = new ControleBotao(nomes[i], cfg, i + 1,this,
+                            (LinearLayout) findViewById(R.id.lLayout));
                     botoes.add(botao);
                 }
             }

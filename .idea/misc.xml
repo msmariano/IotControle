@@ -3,8 +3,13 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/debug/res/drawable/lvopiots.xml" value="0.175" />
         <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/main/res/layout/activity_main.xml" value="0.18" />
-        <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/main/res/layout/activity_main2.xml" value="0.14175724637681159" />
+        <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/main/res/layout/activity_main2.xml" value="0.25" />
+        <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/main/res/layout/activity_main3.xml" value="0.22" />
+        <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/main/res/layout/content_main.xml" value="0.15260416666666668" />
+        <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/main/res/layout/fragment_first.xml" value="0.15260416666666668" />
+        <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/main/res/layout/fragment_second.xml" value="0.13125" />
         <entry key="..\:/Projetos/AndroidStudioProjects/IotControle/app/src/main/res/mipmap-anydpi-v26/ic_launcher_iotcontrole.xml" value="0.175" />
       </map>
     </option>

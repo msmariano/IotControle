@@ -1,9 +1,9 @@
 package com.projetos.marcelo.iotcontrole;
 
-import static com.google.common.collect.ComparisonChain.start;
-
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
@@ -33,9 +33,11 @@ public class MainActivity2 extends AppCompatActivity {
     ListView lvOptIots;
     List<String> opcoes;
     ArrayAdapter<String> adaptador;
+    ControleBotao cb = new ControleBotao();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        this.setTitle("Configuração Geral");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
         lvOptIots = findViewById(R.id.lvOpIots);
@@ -54,13 +56,50 @@ public class MainActivity2 extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 List<Parametro> parametros = Parametro.findWithQuery(Parametro.class, "SELECT * FROM Parametro WHERE parametro = 'NomeIotSel'");
+                view.setSelected(true);
+
+                try {
+                    new Thread() {
+                        @Override
+                        public void run() {
+                            try {
+                                ConfigBotao cfg = new ConfigBotao();
+                                cfg.setNomeIot(opcoes.get(position));
+                                cfg.setNomeIOTCom("CelularMarcelo");
+                                cfg.setUsuario("Matinhos");
+                                cfg.setSenha("M@r0403");
+
+                                if(edEndServidor.getText().toString().trim().length()>0 &&
+                                        edPortaServidor.getText().toString().trim().length()>0) {
+                                    cfg.setServidor(edEndServidor.getText().toString());
+                                    cfg.setPortaServidor(Integer.parseInt(edPortaServidor.getText().toString()));
+                                    cb.setCfg(cfg);
+                                    cb.testaBotoes();
+                                    if(cb.getIdsBt().size()>0){
+                                        Intent intent = new Intent(MainActivity2.this, MainActivity3.class);
+                                        intent.putIntegerArrayListExtra("idBotoes", (ArrayList<Integer>) cb.getIdsBt());
+                                        startActivity(intent);
+                                    }
+
+                                }
+                            } catch (Exception e) {
+
+                            }
+                        }
+                    }.start();
+                }
+                catch (Exception e){
+
+                }
+
+
                 if (parametros.size() > 0) {
                     if(position>1) {
                         parametros.get(0).setCampo1(opcoes.get(position));
                         parametros.get(0).save();
                     }
                 } else {
-                    if(position>1) {
+                    if(position>0) {
                         Parametro parametro = new Parametro("NomeIotSel", opcoes.get(position), "");
                         parametro.save();
                     }
@@ -69,7 +108,8 @@ public class MainActivity2 extends AppCompatActivity {
             }
         });
 
-        edEndServidor = findViewById(R.id.endServidor);
+
+        edEndServidor = findViewById(R.id.edEndServidor);
         edEndServidor.setOnKeyListener(new View.OnKeyListener() {
             public boolean onKey(View v, int keyCode, KeyEvent event) {
                 // If the event is a key-down event on the "enter" button
@@ -171,7 +211,10 @@ public class MainActivity2 extends AppCompatActivity {
         String ret = in.readLine();
         Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
         List<String> lista = gson.fromJson(ret, List.class);
-
+        if(lista.size()>0) {
+            edEndServidor.setTextColor(Color.BLUE);
+            edPortaServidor.setTextColor(Color.BLUE);
+        }
         return lista;
     }
 }
