@@ -1,0 +1,49 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="Servidor">
+
+        <EditTextPreference
+            android:id="@+id/cfgEndServidor"
+            app:key="endereco"
+            app:title="Endereço"
+            app:useSimpleSummaryProvider="true" />
+
+        <EditTextPreference
+            android:defaultValue="true"
+            android:key="porta"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Porta"
+            app:defaultValue="true"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="usuario"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Usuário"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:key="senha"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="Senha"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+    <CheckBoxPreference
+        android:id="@+id/conectarChk"
+        android:defaultValue="false"
+        android:key="conectar"
+        android:title="Conectar" />
+    <PreferenceCategory android:title="Configuração IOT">
+
+        <MultiSelectListPreference
+            android:key="iots"
+            android:title="Selecione IOT" />
+
+
+    </PreferenceCategory>
+
+
+</PreferenceScreen>

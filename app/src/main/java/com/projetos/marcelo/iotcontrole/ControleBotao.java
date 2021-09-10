@@ -1,13 +1,12 @@
 package com.projetos.marcelo.iotcontrole;
 
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -20,7 +19,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,19 +34,27 @@ public class ControleBotao extends AsyncTask {
     private Integer buttonID;
     private String iotDst;
     private LinearLayout linear;
+    private Button btn;
 
+    public Button getBtn() {
+        return btn;
+    }
 
-    public ConfigBotao getCfg() {
+    public void setBtn(Button btn) {
+        this.btn = btn;
+    }
+
+    public Configuracao getCfg() {
         return cfg;
     }
 
-    public void setCfg(ConfigBotao cfg) {
+    public void setCfg(Configuracao cfg) {
         this.cfg = cfg;
     }
 
-    private com.projetos.marcelo.iotcontrole.Status status;
-    private ConfigBotao cfg;
-    private com.projetos.marcelo.iotcontrole.Status statusRetornado;
+    private com.projetos.marcelo.iotcontrole.Status status = com.projetos.marcelo.iotcontrole.Status.NA;
+    private Configuracao cfg;
+    private com.projetos.marcelo.iotcontrole.Status statusRetornado = com.projetos.marcelo.iotcontrole.Status.NA;
     private final String DESLIGADO = "#ffffff";
     private final String LIGADO = "#00ff00";
     private final String NAOINICIALIZADO = "#fff000";
@@ -60,7 +70,7 @@ public class ControleBotao extends AsyncTask {
         this.log = log;
     }
 
-    Button btn;
+
     private List<Integer> idsBt = new ArrayList<Integer>();
 
     public List<Integer> getIdsBt() {
@@ -83,7 +93,7 @@ public class ControleBotao extends AsyncTask {
 
     }
 
-    public ControleBotao(String nomeLocal, ConfigBotao c, Integer id, AppCompatActivity actLocal, LinearLayout linearLocal) {
+    public ControleBotao(String nomeLocal, Configuracao c, Integer id, AppCompatActivity actLocal, LinearLayout linearLocal) {
         linear = linearLocal;
         act = actLocal;
         nome = nomeLocal;
@@ -103,8 +113,12 @@ public class ControleBotao extends AsyncTask {
         btn = new Button(act);
         btn.setId(buttonID);
         final int id_ = btn.getId();
-        btn.setText(nome);
+        btn.setTooltipText(nome);
+        Drawable img = act.getResources().getDrawable(R.drawable.b983w);
+        img.setBounds(0, 0, 60, 60);
+        btn.setCompoundDrawables(img, null, null, null);
         btn.setBackgroundColor(Color.rgb(255, 255, 255));
+        btn.setText(nome);
         linear.addView(btn, params);
         btn = ((Button) act.findViewById(id_));
         btn.setOnClickListener(new View.OnClickListener() {
@@ -120,7 +134,7 @@ public class ControleBotao extends AsyncTask {
         conector.setIot(gerarIot(st, iotDst, buttonId));
         conector.setId("0");
         conector.setTipo(TipoIOT.HUMAN);
-        conector.setNome(cfg.getNomeIOTCom());
+        conector.setNome(cfg.getNomeiotcom());
         conector.setSenha(cfg.getSenha());
         conector.setUsuario(cfg.getUsuario());
         conector.setStatus(sEnvio);
@@ -141,7 +155,7 @@ public class ControleBotao extends AsyncTask {
         conector.setIot(gerarIotSemTratamento(st, iotDst, buttonId));
         conector.setId("0");
         conector.setTipo(TipoIOT.HUMAN);
-        conector.setNome(cfg.getNomeIOTCom());
+        conector.setNome(cfg.getNomeiotcom());
         conector.setSenha(cfg.getSenha());
         conector.setUsuario(cfg.getUsuario());
         conector.setStatus(sEnvio);
@@ -167,6 +181,28 @@ public class ControleBotao extends AsyncTask {
         return gson.toJson(botoes);
     }
 
+    void atualizaImagemLigada(){
+        act.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Drawable img = act.getResources().getDrawable(R.drawable.lacessa);
+                img.setBounds(0, 0, 60, 60);
+                act.runOnUiThread(() ->btn.setCompoundDrawables(img, null, null, null));
+            }
+        });
+    }
+
+    void atualizaImagemDesLigada(){
+        act.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Drawable img = act.getResources().getDrawable(R.drawable.b983w);
+                img.setBounds(0, 0, 60, 60);
+                act.runOnUiThread(() ->btn.setCompoundDrawables(img, null, null, null));
+            }
+        });
+    }
+
     public String gerarBotoesJson(com.projetos.marcelo.iotcontrole.Status st, Integer botaoId, String iotDst) {
         Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
         ButtonIot buttonIot = new ButtonIot();
@@ -176,11 +212,28 @@ public class ControleBotao extends AsyncTask {
             buttonIot.setStatus(com.projetos.marcelo.iotcontrole.Status.OUT);
             if (statusRetornado.equals(com.projetos.marcelo.iotcontrole.Status.OFF)) {
                 statusRetornado = com.projetos.marcelo.iotcontrole.Status.ON;
-                btn.setBackgroundColor(Color.parseColor(DESLIGADO));
+                //btn.setBackgroundColor(Color.parseColor(DESLIGADO));
+                act.runOnUiThread(new Runnable() {
+                                  @Override
+                                  public void run() {
+                                      Drawable img = act.getResources().getDrawable(R.drawable.lacessa);
+                                      img.setBounds(0, 0, 60, 60);
+                                      act.runOnUiThread(() ->btn.setCompoundDrawables(img, null, null, null));
+                                  }
+                              });
+
                 statusLocal = statusRetornado;
             } else if (statusRetornado.equals(com.projetos.marcelo.iotcontrole.Status.ON)) {
                 statusRetornado = com.projetos.marcelo.iotcontrole.Status.OFF;
-                btn.setBackgroundColor(Color.parseColor(LIGADO));
+                //btn.setBackgroundColor(Color.parseColor(LIGADO));
+                act.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Drawable img = act.getResources().getDrawable(R.drawable.b983w);
+                        img.setBounds(0, 0, 60, 60);
+                        act.runOnUiThread(() ->btn.setCompoundDrawables(img, null, null, null));
+                    }
+                });
                 statusLocal = statusRetornado;
             }
             buttonIot.setTecla(statusLocal);
@@ -202,9 +255,9 @@ public class ControleBotao extends AsyncTask {
         new Thread() {
             @Override
             public void run() {
-               act.runOnUiThread(() -> btn.setBackgroundColor(Color.parseColor("#ff00ff")));
+               //act.runOnUiThread(() -> btn.setBackgroundColor(Color.parseColor("#ff00ff")));
                while(true) {
-                   envia(gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeIot(), buttonID));
+                   envia(gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), buttonID));
                    try {
                        Thread.sleep(1000);
                    }
@@ -249,8 +302,8 @@ public class ControleBotao extends AsyncTask {
         com.projetos.marcelo.iotcontrole.Status loginwithcommand = com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND;
         com.projetos.marcelo.iotcontrole.Status acionarbotao = com.projetos.marcelo.iotcontrole.Status.ACIONARBOTAO;
         com.projetos.marcelo.iotcontrole.Status read = com.projetos.marcelo.iotcontrole.Status.READ;
-        ct.envia(ct.gerarConectorJson(loginwithcommand, acionarbotao, ct.cfg.getNomeIot(), ct.buttonID));
-        ct.envia(ct.gerarConectorJson(loginwithcommand, read, ct.cfg.getNomeIot(), ct.buttonID));
+        ct.envia(ct.gerarConectorJson(loginwithcommand, acionarbotao, ct.cfg.getNomeiot(), ct.buttonID));
+        ct.envia(ct.gerarConectorJson(loginwithcommand, read, ct.cfg.getNomeiot(), ct.buttonID));
         return null;
     }
 
@@ -284,7 +337,7 @@ public class ControleBotao extends AsyncTask {
 
         for (int j = 0; j < 8; j++) {
             String ret = enviaServidor(gerarConectorJsonSemTratamento(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND,
-                    com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeIot(), j));
+                    com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), j));
             ret = ret.trim();
             int contador = 0, inicio = 0;
             for (int i = 0; i < ret.length(); i++) {
@@ -307,7 +360,7 @@ public class ControleBotao extends AsyncTask {
         try {
 
             InetAddress serverEnd = InetAddress.getByName(cfg.getServidor());
-            Socket socket = new Socket(serverEnd, cfg.getPortaServidor());
+            Socket socket = new Socket(serverEnd, cfg.getPortaservidor());
             PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
                     true);
 
@@ -324,9 +377,14 @@ public class ControleBotao extends AsyncTask {
 
     public void envia(String textJson) {
         try {
-            log("Conectando:" + cfg.getServidor() + ":" + String.valueOf(cfg.getPortaServidor()));
-            InetAddress serverEnd = InetAddress.getByName(cfg.getServidor());
-            Socket socket = new Socket(serverEnd, cfg.getPortaServidor());
+            log("Conectando:" + cfg.getServidor() + ":" + String.valueOf(cfg.getPortaservidor()));
+            //InetAddress serverEnd = InetAddress.getByName(cfg.getServidor());
+            Socket socket = new Socket();
+            SocketAddress socketAddress = new InetSocketAddress(cfg.getServidor(), cfg.getPortaservidor());
+            socket.connect(socketAddress, 5000);
+            //Socket socket = new Socket(serverEnd, cfg.getPortaServidor());
+
+
             PrintWriter out = new PrintWriter(
                     new BufferedWriter(new OutputStreamWriter(
                             socket.getOutputStream())), true);
@@ -350,10 +408,15 @@ public class ControleBotao extends AsyncTask {
                 }
             }
             socket.close();
+
+        }catch (SocketTimeoutException ste){
+
+
         } catch (Exception e) {
             log("Erro envia:" + e.getMessage());
         }
     }
+
 
     public void trataRetorno(String jSonRetorno) {
         Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
@@ -375,10 +438,12 @@ public class ControleBotao extends AsyncTask {
                             if (buttonIot.getStatus() != null) {
                                 com.projetos.marcelo.iotcontrole.Status statusLocal = buttonIot.getStatus();
                                 if (statusLocal.toString().equals("OFF")) {
-                                    btn.setBackgroundColor(Color.parseColor(DESLIGADO));
+                                    //btn.setBackgroundColor(Color.parseColor(DESLIGADO));
+                                    atualizaImagemDesLigada();
                                     statusRetornado = buttonIot.getStatus();
                                 } else {
-                                    btn.setBackgroundColor(Color.parseColor(LIGADO));
+                                    atualizaImagemLigada();
+                                    //btn.setBackgroundColor(Color.parseColor(LIGADO));
                                     statusRetornado = buttonIot.getStatus();
                                 }
                             }
