@@ -1,10 +1,14 @@
 package com.projetos.marcelo.iotcontrole;
 
+import android.app.ProgressDialog;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -25,7 +29,10 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketAddress;
+import java.net.SocketTimeoutException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -36,6 +43,8 @@ public class SettingsActivity extends AppCompatActivity {
     SQLiteDatabase mydatabase;
     static final Set<String> opcoesNomeIot = new HashSet<>();
     static final Set<String> opcoesNomeIotBtns = new HashSet<>();
+    ProgressBar progressBar;
+    static SettingsActivity instancia;
 
     public static String getDeviceName() {
         String manufacturer = Build.MANUFACTURER;
@@ -68,10 +77,13 @@ public class SettingsActivity extends AppCompatActivity {
         return phrase.toString();
     }
 
-    public static List<String> retornaIots(String endServidor, Integer portaServidor) throws IOException {
+    public static List<String> retornaIots(String endServidor, Integer portaServidor) throws  Exception {
 
         InetAddress serverEnd = InetAddress.getByName(endServidor);
-        Socket socket = new Socket(serverEnd, portaServidor);
+        Socket socket = new Socket();
+        socket.setSoTimeout(5000);
+        SocketAddress socketAddress = new InetSocketAddress(serverEnd, portaServidor);
+        socket.connect(socketAddress, 5000);
         PrintWriter out = new PrintWriter(
                 new BufferedWriter(new OutputStreamWriter(
                         socket.getOutputStream())), true);
@@ -102,6 +114,10 @@ public class SettingsActivity extends AppCompatActivity {
         if (actionBar != null) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
+
+        progressBar = findViewById(R.id.progressBar2);
+        instancia = this;
+
         try {
             mydatabase = openOrCreateDatabase("cfg.db", MODE_PRIVATE, null);
             Cursor c = mydatabase.rawQuery("SELECT DISTINCT NOMEIOT FROM Configuracao", null);
@@ -121,6 +137,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static class SettingsFragment extends PreferenceFragmentCompat {
 
+        //Metodo que trata mudanca de valores nas configuracoes de botao criadas dinamicamente
         public void alterarCfgBtn(EditTextPreference preference){
             preference.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                 @Override
@@ -160,6 +177,39 @@ public class SettingsActivity extends AppCompatActivity {
             setPreferencesFromResource(R.xml.root_preferences, rootKey);
             MultiSelectListPreference listaIots = getPreferenceManager().findPreference("iots");
             CharSequence[] cs = opcoes.toArray(new CharSequence[0]);
+            getPreferenceManager().findPreference("endereco").setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    String query = "UPDATE Configuracao SET SERVIDOR = '" + (String) newValue+"'";
+                    Configuracao.executeQuery(query);
+                    return true;
+                }
+            });
+            getPreferenceManager().findPreference("porta").setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    String query = "UPDATE Configuracao SET PORTASERVIDOR = '" + (String) newValue+"'";
+                    Configuracao.executeQuery(query);
+                    return true;
+                }
+            });
+            getPreferenceManager().findPreference("usuario").setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    String query = "UPDATE Configuracao SET USUARIO = '" + (String) newValue+"'";
+                    Configuracao.executeQuery(query);
+                    return true;
+                }
+            });
+            getPreferenceManager().findPreference("senha").setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
+                @Override
+                public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    String query = "UPDATE Configuracao SET SENHA = '" + (String) newValue+"'";
+                    Configuracao.executeQuery(query);
+                    return true;
+                }
+            });
+
             assert listaIots != null;
             listaIots.setEntries(cs);
             listaIots.setEntryValues(cs);
@@ -178,10 +228,7 @@ public class SettingsActivity extends AppCompatActivity {
                 screen.addPreference(preference);
                 alterarCfgBtn(preference);
             }
-
-
-
-
+            //Evento de selecao de iots
             MultiSelectListPreference iots = this.getPreferenceManager().findPreference("iots");
             iots.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                 @Override
@@ -262,10 +309,12 @@ public class SettingsActivity extends AppCompatActivity {
                 }
             });
 
+            //Evento de mudanca de estado do check de conexao
             CheckBoxPreference chkCon = this.getPreferenceManager().findPreference("conectar");
             chkCon.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
                 @Override
                 public boolean onPreferenceChange(Preference preference, Object newValue) {
+                    System.err.println("Executando evento botao conectar");
                     Boolean bCon = (Boolean) newValue;
                     MultiSelectListPreference listaIots = getPreferenceManager().findPreference("iots");
                     EditTextPreference edEndServidor = getPreferenceManager().findPreference("endereco");
@@ -273,16 +322,25 @@ public class SettingsActivity extends AppCompatActivity {
                     //Preencher lista Iot
                     if (bCon) {
                         try {
-                            new Thread() {
+
+                            Thread thread = new Thread(new Runnable() {
                                 @Override
                                 public void run() {
+                                    boolean erro = false;
+                                    instancia .runOnUiThread( () -> instancia.progressBar.setVisibility(View.VISIBLE));
                                     try {
                                         assert edPortaServidor != null;
                                         if (edPortaServidor.getText().trim().length() > 0) {
                                             assert edEndServidor != null;
                                             if (edEndServidor.getText().trim().length() > 0) {
-                                                List<String> iots = retornaIots(edEndServidor.getText(),
-                                                        Integer.parseInt(edPortaServidor.getText()));
+                                                List<String> iots = null;
+                                                try {
+                                                    iots = retornaIots(edEndServidor.getText(),
+                                                            Integer.parseInt(edPortaServidor.getText()));
+                                                }
+                                                catch (Exception e){
+                                                    erro = true;
+                                                }
                                                 if (iots != null) {
                                                     opcoes.clear();
                                                     opcoes.addAll(iots);
@@ -290,21 +348,35 @@ public class SettingsActivity extends AppCompatActivity {
                                                     listaIots.setEntries(cs);
                                                     listaIots.setEntryValues(cs);
                                                     listaIots.setVisible(true);
-                                                    listaIots.saveHierarchyState(savedInstanceState);
                                                 }
                                             }
                                         }
                                     } catch (Exception e) {
+                                        erro = true;
+                                    }
+                                    instancia.progressBar.setVisibility(View.INVISIBLE);
+                                    if(erro) {
+                                        instancia.runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                CheckBoxPreference chk = getPreferenceManager().findPreference("conectar");
+                                                chk.setChecked(false);
+                                                Toast.makeText(instancia.getApplicationContext(),"Servidor sem conexão",Toast.LENGTH_LONG).show();
+                                            }
+                                        });
                                     }
                                 }
-                            }.start();
+                            });
+                            thread.start();
+                            //while(thread.isAlive());
                         } catch (Exception e) {
+                            //instancia.runOnUiThread(() ->pb.setVisibility(View.INVISIBLE));
                             e.printStackTrace();
                         }
                     } else
                         return true;
 
-                    return opcoes.size() > 0;
+                    return true;//(opcoes.size() > 0 && !erro);
                 }
             });
         }

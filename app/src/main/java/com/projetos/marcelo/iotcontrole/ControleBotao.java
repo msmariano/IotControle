@@ -30,11 +30,35 @@ import java.util.List;
  *
  */
 public class ControleBotao extends AsyncTask {
+    private final String DESLIGADO = "#ffffff";
+    private final String LIGADO = "#00ff00";
+    private final String NAOINICIALIZADO = "#fff000";
     private AppCompatActivity act;
     private Integer buttonID;
     private String iotDst;
     private LinearLayout linear;
     private Button btn;
+    private com.projetos.marcelo.iotcontrole.Status status = com.projetos.marcelo.iotcontrole.Status.NA;
+    private Configuracao cfg;
+    private com.projetos.marcelo.iotcontrole.Status statusRetornado = com.projetos.marcelo.iotcontrole.Status.NA;
+    private ControleBotao self;
+    private String nome;
+    private EditText log;
+    private List<Integer> idsBt = new ArrayList<Integer>();
+    public ControleBotao() {
+
+    }
+    public ControleBotao(String nomeLocal, Configuracao c, Integer id, AppCompatActivity actLocal, LinearLayout linearLocal) {
+        linear = linearLocal;
+        act = actLocal;
+        nome = nomeLocal;
+        self = this;
+        cfg = c;
+        status = com.projetos.marcelo.iotcontrole.Status.OFF;
+        buttonID = id;
+        gerarBotao();
+        atualizar();
+    }
 
     public Button getBtn() {
         return btn;
@@ -52,16 +76,6 @@ public class ControleBotao extends AsyncTask {
         this.cfg = cfg;
     }
 
-    private com.projetos.marcelo.iotcontrole.Status status = com.projetos.marcelo.iotcontrole.Status.NA;
-    private Configuracao cfg;
-    private com.projetos.marcelo.iotcontrole.Status statusRetornado = com.projetos.marcelo.iotcontrole.Status.NA;
-    private final String DESLIGADO = "#ffffff";
-    private final String LIGADO = "#00ff00";
-    private final String NAOINICIALIZADO = "#fff000";
-    private ControleBotao self;
-    private String nome;
-    private EditText log;
-
     public EditText getLog() {
         return log;
     }
@@ -69,9 +83,6 @@ public class ControleBotao extends AsyncTask {
     public void setLog(EditText log) {
         this.log = log;
     }
-
-
-    private List<Integer> idsBt = new ArrayList<Integer>();
 
     public List<Integer> getIdsBt() {
         return idsBt;
@@ -89,22 +100,6 @@ public class ControleBotao extends AsyncTask {
         this.nome = nome;
     }
 
-    public ControleBotao() {
-
-    }
-
-    public ControleBotao(String nomeLocal, Configuracao c, Integer id, AppCompatActivity actLocal, LinearLayout linearLocal) {
-        linear = linearLocal;
-        act = actLocal;
-        nome = nomeLocal;
-        self = this;
-        cfg = c;
-        status = com.projetos.marcelo.iotcontrole.Status.OFF;
-        buttonID = id;
-        gerarBotao();
-        atualizar();
-    }
-
     public void gerarBotao() {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -120,7 +115,7 @@ public class ControleBotao extends AsyncTask {
         btn.setBackgroundColor(Color.rgb(255, 255, 255));
         btn.setText(nome);
         linear.addView(btn, params);
-        btn = ((Button) act.findViewById(id_));
+        btn = act.findViewById(id_);
         btn.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 new ControleBotao().execute(self);
@@ -181,24 +176,24 @@ public class ControleBotao extends AsyncTask {
         return gson.toJson(botoes);
     }
 
-    void atualizaImagemLigada(){
+    void atualizaImagemLigada() {
         act.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 Drawable img = act.getResources().getDrawable(R.drawable.lacessa);
                 img.setBounds(0, 0, 60, 60);
-                act.runOnUiThread(() ->btn.setCompoundDrawables(img, null, null, null));
+                act.runOnUiThread(() -> btn.setCompoundDrawables(img, null, null, null));
             }
         });
     }
 
-    void atualizaImagemDesLigada(){
+    void atualizaImagemDesLigada() {
         act.runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 Drawable img = act.getResources().getDrawable(R.drawable.b983w);
                 img.setBounds(0, 0, 60, 60);
-                act.runOnUiThread(() ->btn.setCompoundDrawables(img, null, null, null));
+                act.runOnUiThread(() -> btn.setCompoundDrawables(img, null, null, null));
             }
         });
     }
@@ -214,13 +209,13 @@ public class ControleBotao extends AsyncTask {
                 statusRetornado = com.projetos.marcelo.iotcontrole.Status.ON;
                 //btn.setBackgroundColor(Color.parseColor(DESLIGADO));
                 act.runOnUiThread(new Runnable() {
-                                  @Override
-                                  public void run() {
-                                      Drawable img = act.getResources().getDrawable(R.drawable.lacessa);
-                                      img.setBounds(0, 0, 60, 60);
-                                      act.runOnUiThread(() ->btn.setCompoundDrawables(img, null, null, null));
-                                  }
-                              });
+                    @Override
+                    public void run() {
+                        Drawable img = act.getResources().getDrawable(R.drawable.lacessa);
+                        img.setBounds(0, 0, 60, 60);
+                        act.runOnUiThread(() -> btn.setCompoundDrawables(img, null, null, null));
+                    }
+                });
 
                 statusLocal = statusRetornado;
             } else if (statusRetornado.equals(com.projetos.marcelo.iotcontrole.Status.ON)) {
@@ -231,7 +226,7 @@ public class ControleBotao extends AsyncTask {
                     public void run() {
                         Drawable img = act.getResources().getDrawable(R.drawable.b983w);
                         img.setBounds(0, 0, 60, 60);
-                        act.runOnUiThread(() ->btn.setCompoundDrawables(img, null, null, null));
+                        act.runOnUiThread(() -> btn.setCompoundDrawables(img, null, null, null));
                     }
                 });
                 statusLocal = statusRetornado;
@@ -251,25 +246,26 @@ public class ControleBotao extends AsyncTask {
     }
 
     public void atualizar() {
-        log("Atualizando :" + buttonID);
         new Thread() {
             @Override
             public void run() {
-               //act.runOnUiThread(() -> btn.setBackgroundColor(Color.parseColor("#ff00ff")));
-               while(true) {
-                   envia(gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), buttonID));
-                   try {
-                       Thread.sleep(1000);
-                   }
-                   catch (Exception e){
-
-                   }
-               }
+                while (true) {
+                    try {
+                        //Teste de exaustao
+                        //if(buttonID == 1)
+                        //    new ControleBotao().execute(self);
+                        envia(gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), buttonID));
+                        Thread.sleep(2000);
+                    } catch (Exception e) {
+                        System.err.println("Erro atualizar: " + e.getMessage());
+                    }
+                }
             }
         }.start();
     }
 
     private void log(String text) {
+        //System.out.println(text);
         //cfg.getLog().setText(cfg.getLog().getText()+"\n"+text);
     }
 
@@ -333,6 +329,7 @@ public class ControleBotao extends AsyncTask {
             }
         }
     }
+
     public void testaBotoes() {
 
         for (int j = 0; j < 8; j++) {
@@ -359,8 +356,12 @@ public class ControleBotao extends AsyncTask {
         String ret = null;
         try {
 
-            InetAddress serverEnd = InetAddress.getByName(cfg.getServidor());
-            Socket socket = new Socket(serverEnd, cfg.getPortaservidor());
+            Socket socket = new Socket();
+            socket.setSoTimeout(5000);
+            SocketAddress socketAddress = new InetSocketAddress(cfg.getServidor(), cfg.getPortaservidor());
+            socket.connect(socketAddress, 5000);
+            //InetAddress serverEnd = InetAddress.getByName(cfg.getServidor());
+            //Socket socket = new Socket(serverEnd, cfg.getPortaservidor());
             PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())),
                     true);
 
@@ -375,25 +376,19 @@ public class ControleBotao extends AsyncTask {
         return ret;
     }
 
-    public void envia(String textJson) {
+    public boolean envia(String textJson) {
         try {
-            log("Conectando:" + cfg.getServidor() + ":" + String.valueOf(cfg.getPortaservidor()));
-            //InetAddress serverEnd = InetAddress.getByName(cfg.getServidor());
             Socket socket = new Socket();
+            socket.setSoTimeout(5000);
             SocketAddress socketAddress = new InetSocketAddress(cfg.getServidor(), cfg.getPortaservidor());
             socket.connect(socketAddress, 5000);
-            //Socket socket = new Socket(serverEnd, cfg.getPortaServidor());
-
-
             PrintWriter out = new PrintWriter(
                     new BufferedWriter(new OutputStreamWriter(
                             socket.getOutputStream())), true);
-            log("Send:" + textJson);
             out.println(textJson);
             BufferedReader in = new BufferedReader(
                     new InputStreamReader(socket.getInputStream()));
             String ret = in.readLine();
-            log("recv:" + ret);
             ret = ret.trim();
             int contador = 0, inicio = 0;
             for (int i = 0; i < ret.length(); i++) {
@@ -408,13 +403,15 @@ public class ControleBotao extends AsyncTask {
                 }
             }
             socket.close();
-
-        }catch (SocketTimeoutException ste){
-
+        } catch (SocketTimeoutException ste) {
+            System.err.println("Erro timeout envia: " + ste.getMessage());
+            return false;
 
         } catch (Exception e) {
-            log("Erro envia:" + e.getMessage());
+            System.err.println("Erro envia:" + e.getMessage());
+            return false;
         }
+        return true;
     }
 
 

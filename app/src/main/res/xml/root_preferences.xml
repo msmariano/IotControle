@@ -6,6 +6,7 @@
         <EditTextPreference
             android:id="@+id/cfgEndServidor"
             app:key="endereco"
+            app:singleLineTitle="false"
             app:title="Endereço"
             app:useSimpleSummaryProvider="true" />
 
@@ -35,7 +36,7 @@
         android:id="@+id/conectarChk"
         android:defaultValue="false"
         android:key="conectar"
-        android:title="Conectar" />
+        android:title="Preencher IOT" />
     <PreferenceCategory android:title="Configuração IOT">
 
         <MultiSelectListPreference
