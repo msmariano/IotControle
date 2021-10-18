@@ -7,6 +7,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.projetos.marcelo.iotcontrole.ui.login.LoginActivity;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -28,11 +29,17 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
         //Configuracao.deleteAll(Configuracao.class);
+
         mydatabase = openOrCreateDatabase("cfg.db", MODE_PRIVATE, null);
+        //mydatabase.execSQL("DROP tABLE IF EXISTS PARAMETRO");
+        //mydatabase.execSQL("DROP TABLE IF EXISTS CONFIGURACAO");
         mydatabase.execSQL("CREATE TABLE IF NOT EXISTS Configuracao(ID INTEGER,SERVIDOR VARCHAR," +
                 "PORTASERVIDOR INTEGER,USUARIO VARCHAR,SENHA VARCHAR,NOMEIOTCOM VARCHAR," +
                 "NOMEIOT VARCHAR, NOMEBOTAO VARCHAR,IDBOTAO INTEGER );");
-}
+        mydatabase.execSQL("CREATE TABLE IF NOT EXISTS PARAMETRO(ID INTEGER,PARAMETRO VARCHAR,CAMPO1 VARCHAR,CAMPO2 VARCHAR);");
+        //Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+        //startActivity(intent);
+    }
 
     @Override
     public void onResume() {

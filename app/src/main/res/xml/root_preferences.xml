@@ -1,10 +1,12 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@android:drawable/ic_menu_add">
 
     <PreferenceCategory app:title="Servidor">
 
         <EditTextPreference
             android:id="@+id/cfgEndServidor"
+            android:icon="@android:drawable/ic_dialog_map"
             app:key="endereco"
             app:singleLineTitle="false"
             app:title="Endereço"
@@ -40,6 +42,9 @@
     <PreferenceCategory android:title="Configuração IOT">
 
         <MultiSelectListPreference
+            android:backgroundTint="@color/design_default_color_secondary_variant"
+            android:dialogIcon="@android:drawable/ic_menu_search"
+            android:icon="@android:drawable/ic_menu_search"
             android:key="iots"
             android:title="Selecione IOT" />
 

@@ -335,17 +335,19 @@ public class ControleBotao extends AsyncTask {
         for (int j = 0; j < 8; j++) {
             String ret = enviaServidor(gerarConectorJsonSemTratamento(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND,
                     com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), j));
-            ret = ret.trim();
-            int contador = 0, inicio = 0;
-            for (int i = 0; i < ret.length(); i++) {
-                if (ret.charAt(i) == '{') {
-                    contador++;
-                } else if (ret.charAt(i) == '}') {
-                    contador--;
-                }
-                if (contador == 0 && i != 0) {
-                    pegarIds(ret.substring(inicio, i + 1));
-                    inicio = i + 1;
+            if(ret!=null) {
+                ret = ret.trim();
+                int contador = 0, inicio = 0;
+                for (int i = 0; i < ret.length(); i++) {
+                    if (ret.charAt(i) == '{') {
+                        contador++;
+                    } else if (ret.charAt(i) == '}') {
+                        contador--;
+                    }
+                    if (contador == 0 && i != 0) {
+                        pegarIds(ret.substring(inicio, i + 1));
+                        inicio = i + 1;
+                    }
                 }
             }
         }

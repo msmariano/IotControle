@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.preference.AndroidResources;
 import androidx.preference.CheckBoxPreference;
 import androidx.preference.EditTextPreference;
 import androidx.preference.MultiSelectListPreference;
@@ -33,6 +34,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -44,6 +46,7 @@ public class SettingsActivity extends AppCompatActivity {
     static final Set<String> opcoesNomeIot = new HashSet<>();
     static final Set<String> opcoesNomeIotBtns = new HashSet<>();
     ProgressBar progressBar;
+    static List<EditTextPreference> listaCfgBtn = new ArrayList<>();
     static SettingsActivity instancia;
 
     public static String getDeviceName() {
@@ -137,36 +140,6 @@ public class SettingsActivity extends AppCompatActivity {
 
     public static class SettingsFragment extends PreferenceFragmentCompat {
 
-        //Metodo que trata mudanca de valores nas configuracoes de botao criadas dinamicamente
-        public void alterarCfgBtn(EditTextPreference preference){
-            preference.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-                @Override
-                public boolean onPreferenceChange(Preference preference, Object newValue) {
-                    try {
-                        EditTextPreference btn = getPreferenceManager().findPreference(preference.getKey());
-                        assert btn != null;
-                        Integer inicio = btn.getTitle().toString().indexOf("ButtonID_");
-                        Integer fim = inicio + "ButtonID_".length();
-                        String id = btn.getTitle().toString().substring(fim);
-                        List<Configuracao> cbs = Configuracao.findWithQuery(Configuracao.class,
-                                "SELECT * FROM Configuracao WHERE idBotao =" + id);
-                        if (cbs != null && cbs.size() > 0) {
-                            Configuracao cf = cbs.get(0);
-                            cf.setNomebotao((String) newValue);
-                            String query = "UPDATE Configuracao SET NOMEBOTAO = '" + (String) newValue
-                                    + "' WHERE IDBOTAO =" + id;
-                            Configuracao.executeQuery(query);
-                            return true;
-                        }
-                        return false;
-                    } catch (Exception e) {
-                        System.out.println("Erro salvando nome do botao:" + e.getMessage());
-                        return false;
-                    }
-                }
-            });
-        }
-
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             Set<String> opcoes = opcoesNomeIot;// new HashSet<>();
@@ -216,18 +189,17 @@ public class SettingsActivity extends AppCompatActivity {
             if(opcoes.size()==0)
                 listaIots.setVisible(false);
 
+            //Carrega Configuracao inicializacao tela
             Iterator<Configuracao> configs =  Configuracao.findAll(Configuracao.class);
+            listaCfgBtn.clear();
             while ( configs.hasNext()) {
-                Configuracao cf = configs.next();
-                PreferenceScreen screen = getPreferenceManager().getPreferenceScreen();
-                setPreferenceScreen(screen);
-                EditTextPreference preference = new EditTextPreference(screen.getContext());
-                preference.setKey("EditTextPreferenceBtn_" + cf.getIdbotao().byteValue());
-                preference.setTitle(cf.getNomeiot() + "_ButtonID_" + cf.getIdbotao().byteValue());
-                preference.setDefaultValue(cf.getNomebotao());
-                screen.addPreference(preference);
-                alterarCfgBtn(preference);
+                CfgPreferenciaBtn preference = new CfgPreferenciaBtn(getPreferenceManager()
+                        .getPreferenceScreen().getContext(),getPreferenceManager().getPreferenceScreen());
+                preference.setCfg(configs.next());
+                listaCfgBtn.add(preference);
             }
+
+
             //Evento de selecao de iots
             MultiSelectListPreference iots = this.getPreferenceManager().findPreference("iots");
             iots.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
@@ -264,7 +236,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                                                         PreferenceScreen screen = getPreferenceManager().getPreferenceScreen();
                                                         setPreferenceScreen(screen);
-                                                        EditTextPreference preference = new EditTextPreference(screen.getContext());
+                                                        CfgPreferenciaBtn preference = new CfgPreferenciaBtn(screen.getContext());
                                                         preference.setKey("EditTextPreferenceBtn_" + i);
                                                         preference.setTitle(opt + "_ButtonID_" + i);
                                                         Configuracao configuracao = null;
@@ -289,7 +261,7 @@ public class SettingsActivity extends AppCompatActivity {
                                                         }
                                                         preference.setDefaultValue("Lamp_" + i);
                                                         screen.addPreference(preference);
-                                                        alterarCfgBtn(preference);
+
                                                     }
                                                 }
                                             }
