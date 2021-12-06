@@ -12,16 +12,20 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +37,7 @@ public class ControleBotao extends AsyncTask {
     private final String DESLIGADO = "#ffffff";
     private final String LIGADO = "#00ff00";
     private final String NAOINICIALIZADO = "#fff000";
+    private Socket socketEnviaSemFechar;
     private AppCompatActivity act;
     private Integer buttonID;
     private String iotDst;
@@ -48,7 +53,7 @@ public class ControleBotao extends AsyncTask {
     public ControleBotao() {
 
     }
-    public ControleBotao(String nomeLocal, Configuracao c, Integer id, AppCompatActivity actLocal, LinearLayout linearLocal) {
+    public ControleBotao(String nomeLocal, Configuracao c, Integer id, AppCompatActivity actLocal, LinearLayout linearLocal) throws IOException {
         linear = linearLocal;
         act = actLocal;
         nome = nomeLocal;
@@ -140,6 +145,7 @@ public class ControleBotao extends AsyncTask {
         Iot iot = new Iot();
         iot.setId("0");
         iot.setName(iotDst);
+        iot.setTipoIOT(TipoIOT.SERVIDOR);
         iot.setjSon(gerarBotoesJson(st, buttonId, iotDst));
         return iot;
     }
@@ -245,20 +251,37 @@ public class ControleBotao extends AsyncTask {
         return gson.toJson(botoes);
     }
 
-    public void atualizar() {
+    public void atualizar() throws IOException {
+
+
         new Thread() {
             @Override
             public void run() {
-                while (true) {
+                try {
+                    socketEnviaSemFechar = new Socket();
+                    socketEnviaSemFechar.setSoTimeout(5000);
+                    SocketAddress socketAddress = new InetSocketAddress(cfg.getServidor(), cfg.getPortaservidor());
+                    socketEnviaSemFechar.connect(socketAddress, 5000);
+                }
+                catch (Exception e){
+
+                }
+                while (socketEnviaSemFechar.isConnected()) {
                     try {
                         //Teste de exaustao
                         //if(buttonID == 1)
                         //    new ControleBotao().execute(self);
-                        envia(gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), buttonID));
-                        Thread.sleep(2000);
+                        String jSon = gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), buttonID);
+                        enviaSemFechar(jSon);
+                        Thread.sleep(500);
                     } catch (Exception e) {
                         System.err.println("Erro atualizar: " + e.getMessage());
                     }
+                }
+                try {
+                    socketEnviaSemFechar.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }.start();
@@ -297,8 +320,12 @@ public class ControleBotao extends AsyncTask {
         ct = (ControleBotao) obj;
         com.projetos.marcelo.iotcontrole.Status loginwithcommand = com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND;
         com.projetos.marcelo.iotcontrole.Status acionarbotao = com.projetos.marcelo.iotcontrole.Status.ACIONARBOTAO;
+        //com.projetos.marcelo.iotcontrole.Status acionarbotao = com.projetos.marcelo.iotcontrole.Status.OUT;
+        if(statusRetornado == null)
+            statusRetornado = com.projetos.marcelo.iotcontrole.Status.OFF;
         com.projetos.marcelo.iotcontrole.Status read = com.projetos.marcelo.iotcontrole.Status.READ;
-        ct.envia(ct.gerarConectorJson(loginwithcommand, acionarbotao, ct.cfg.getNomeiot(), ct.buttonID));
+        String jSon = ct.gerarConectorJson(loginwithcommand, acionarbotao, ct.cfg.getNomeiot(), ct.buttonID);
+        ct.envia(jSon);
         ct.envia(ct.gerarConectorJson(loginwithcommand, read, ct.cfg.getNomeiot(), ct.buttonID));
         return null;
     }
@@ -332,7 +359,7 @@ public class ControleBotao extends AsyncTask {
 
     public void testaBotoes() {
 
-        for (int j = 0; j < 8; j++) {
+        /*for (int j = 0; j < 8; j++) {
             String ret = enviaServidor(gerarConectorJsonSemTratamento(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND,
                     com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), j));
             if(ret!=null) {
@@ -347,6 +374,52 @@ public class ControleBotao extends AsyncTask {
                     if (contador == 0 && i != 0) {
                         pegarIds(ret.substring(inicio, i + 1));
                         inicio = i + 1;
+                    }
+                }
+            }
+        }*/
+
+        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+
+        Conector conector = new Conector();
+        conector.setId("0");
+        conector.setTipo(TipoIOT.HUMAN);
+        conector.setNome(cfg.getNomeiot());
+        conector.setSenha(cfg.getSenha());
+        conector.setUsuario(cfg.getUsuario());
+        conector.setStatus(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND);
+        Iot iot = new Iot();
+        iot.setId("0");
+        iot.setTipoIOT(TipoIOT.SERVIDOR);
+        iot.setName(cfg.getNomeiot());
+        conector.setIot(iot);
+
+
+        List<ButtonIot> botoes = new ArrayList<>();
+        for (int j = 0; j < 8; j++) {
+
+            ButtonIot buttonIot = new ButtonIot();
+            buttonIot.setButtonID(j);
+            buttonIot.setStatus(com.projetos.marcelo.iotcontrole.Status.READ);
+            buttonIot.setTecla(com.projetos.marcelo.iotcontrole.Status.NA);
+            botoes.add(buttonIot);
+
+        }
+        Type listType1 = new TypeToken<ArrayList<ButtonIot>>(){}.getType();
+        iot.setjSon(gson.toJson(botoes,listType1));
+        String jSonEnvia = gson.toJson(conector,Conector.class);
+        String ret1 = enviaServidor(jSonEnvia);
+
+
+        Conector con  = gson.fromJson(ret1, Conector.class);
+        Type listType = new TypeToken<ArrayList<ButtonIot>>(){}.getType();
+        List<ButtonIot> listaBiot = gson.fromJson(con.getIot().getjSon(),listType);
+        for (ButtonIot buttonIot: listaBiot) {
+            if (buttonIot != null && buttonIot.getFuncao() != null) {
+                if (buttonIot.getFuncao().equals(com.projetos.marcelo.iotcontrole.Status.INTERRUPTOR)) {
+                    if (buttonIot.getStatus() != null) {
+                        System.out.println("ButtonID:" + buttonIot.getButtonID());
+                        idsBt.add(buttonIot.getButtonID());
                     }
                 }
             }
@@ -376,6 +449,42 @@ public class ControleBotao extends AsyncTask {
 
         }
         return ret;
+    }
+
+    public boolean enviaSemFechar(String textJson) {
+        try {
+
+
+            PrintWriter out = new PrintWriter(
+                    new BufferedWriter(new OutputStreamWriter(
+                            socketEnviaSemFechar.getOutputStream())), true);
+            out.println(textJson);
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(socketEnviaSemFechar.getInputStream()));
+            String ret = in.readLine();
+            ret = ret.trim();
+            int contador = 0, inicio = 0;
+            for (int i = 0; i < ret.length(); i++) {
+                if (ret.charAt(i) == '{') {
+                    contador++;
+                } else if (ret.charAt(i) == '}') {
+                    contador--;
+                }
+                if (contador == 0 && i != 0) {
+                    trataRetorno(ret.substring(inicio, i + 1));
+                    inicio = i + 1;
+                }
+            }
+
+        } catch (SocketTimeoutException ste) {
+            System.err.println("Erro timeout envia: " + ste.getMessage());
+            return false;
+
+        } catch (Exception e) {
+            System.err.println("Erro envia:" + e.getMessage());
+            return false;
+        }
+        return true;
     }
 
     public boolean envia(String textJson) {
@@ -428,30 +537,33 @@ public class ControleBotao extends AsyncTask {
             }
         } else if (conector != null && conector.getStatus() != null && conector.getStatus().equals(com.projetos.marcelo.iotcontrole.Status.RETORNO)) {
             if (conector.getIot().getjSon() != null) {
-                ButtonIot buttonIot = null;
-                try {
-                    buttonIot = gson.fromJson(conector.getIot().getjSon(), ButtonIot.class);
 
-                    if (buttonIot != null && buttonIot.getFuncao() != null) {
-                        if (buttonIot.getFuncao().equals(com.projetos.marcelo.iotcontrole.Status.READ)) {
-                            if (buttonIot.getStatus() != null) {
-                                com.projetos.marcelo.iotcontrole.Status statusLocal = buttonIot.getStatus();
-                                if (statusLocal.toString().equals("OFF")) {
-                                    //btn.setBackgroundColor(Color.parseColor(DESLIGADO));
-                                    atualizaImagemDesLigada();
-                                    statusRetornado = buttonIot.getStatus();
-                                } else {
-                                    atualizaImagemLigada();
-                                    //btn.setBackgroundColor(Color.parseColor(LIGADO));
-                                    statusRetornado = buttonIot.getStatus();
+                try {
+                    Type listType = new TypeToken<ArrayList<ButtonIot>>() {}.getType();
+                    List<ButtonIot> listaBiot = gson.fromJson(conector.getIot().getjSon(), listType);
+
+                    for( ButtonIot buttonIot : listaBiot){
+                        if (buttonIot != null && buttonIot.getFuncao() != null) {
+                            if (buttonIot.getFuncao().equals(com.projetos.marcelo.iotcontrole.Status.INTERRUPTOR)) {
+                                if (buttonIot.getStatus() != null) {
+                                    com.projetos.marcelo.iotcontrole.Status statusLocal = buttonIot.getStatus();
+                                    if (statusLocal.toString().equals("OFF")) {
+                                        //btn.setBackgroundColor(Color.parseColor(DESLIGADO));
+                                        atualizaImagemDesLigada();
+                                        statusRetornado = buttonIot.getStatus();
+                                    } else {
+                                        atualizaImagemLigada();
+                                        //btn.setBackgroundColor(Color.parseColor(LIGADO));
+                                        statusRetornado = buttonIot.getStatus();
+                                    }
                                 }
+                            } else if (buttonIot.getFuncao().equals(com.projetos.marcelo.iotcontrole.Status.GETVALUE)) {
+                                //Toast.makeText(cfg.getAct().getApplicationContext(), buttonIot.getjSon(), Toast.LENGTH_LONG).show();
                             }
-                        } else if (buttonIot.getFuncao().equals(com.projetos.marcelo.iotcontrole.Status.GETVALUE)) {
-                            //Toast.makeText(cfg.getAct().getApplicationContext(), buttonIot.getjSon(), Toast.LENGTH_LONG).show();
                         }
                     }
                 } catch (Exception e) {
-                    //Toast.makeText(cfg.getAct().getApplicationContext(), e.getMessage(), Toast.LENGTH_LONG).show();
+                    System.out.println();
                 }
             }
         }

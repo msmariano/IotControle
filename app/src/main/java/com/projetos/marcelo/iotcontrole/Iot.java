@@ -4,6 +4,7 @@ public class Iot {
     private String id;
     private String name;
     private String jSon;
+    private TipoIOT tipoIOT;
     public String getId() {
         return id;
     }
@@ -21,5 +22,11 @@ public class Iot {
     }
     public void setjSon(String jSon) {
         this.jSon = jSon;
+    }
+    public TipoIOT getTipoIOT() {
+        return tipoIOT;
+    }
+    public void setTipoIOT(TipoIOT tipoIOT) {
+        this.tipoIOT = tipoIOT;
     }
 }

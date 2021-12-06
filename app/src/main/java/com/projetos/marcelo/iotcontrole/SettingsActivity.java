@@ -212,7 +212,7 @@ public class SettingsActivity extends AppCompatActivity {
                     EditTextPreference senha = getPreferenceManager().findPreference("senha");
                     for (String opt : opts) {
                         try {
-                            new Thread() {
+                            Thread thread = new Thread(new Runnable() {
                                 @Override
                                 public void run() {
                                     try {
@@ -270,9 +270,10 @@ public class SettingsActivity extends AppCompatActivity {
                                         System.out.println(e.getMessage());
                                     }
                                 }
-                            }.start();
+                            });
+                            thread.start();
                         } catch (Exception e) {
-
+                            System.out.println(e.getMessage());
                         }
 
                     }

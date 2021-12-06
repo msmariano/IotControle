@@ -24,10 +24,12 @@
         <entry key="..\:/Users/msmar/StudioProjects/IotControle/app/src/main/res/mipmap-anydpi-v26/ic_launcher_iotcontrole.xml" value="0.18425925925925926" />
         <entry key="..\:/Users/msmar/StudioProjects/IotControle/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.18425925925925926" />
         <entry key="..\:/Users/msmar/StudioProjects/IotControle/app/src/main/res/xml/root_preferences.xml" value="0.25" />
+        <entry key="..\:/Users/msmar/StudioProjects/app/src/main/res/layout/settings_activity.xml" value="0.1" />
+        <entry key="..\:/Users/msmar/StudioProjects/app/src/main/res/xml/root_preferences.xml" value="0.2" />
       </map>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" default="true" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/build/classes" />
   </component>
   <component name="ProjectType">

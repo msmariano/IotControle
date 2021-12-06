@@ -1,7 +1,7 @@
 package com.projetos.marcelo.iotcontrole;
 
 public enum TipoIOT {
-    CONTROLELAMPADA(1,"Controle lampadas"),CONTROLEREMOTO(2,"Controle remoto"),IOT(3,"Iot"),HUMAN(4,"Humano");
+    CONTROLELAMPADA(1,"Controle lampadas"),CONTROLEREMOTO(2,"Controle remoto"),IOT(3,"Iot"),HUMAN(4,"Humano"),SERVIDOR(5,"Servidor");
 
     private final int valor;
     private final String descricao;
