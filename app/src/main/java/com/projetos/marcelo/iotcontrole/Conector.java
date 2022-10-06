@@ -1,5 +1,8 @@
 package com.projetos.marcelo.iotcontrole;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Conector {
     private String id;
     public String getId() {
@@ -74,4 +77,27 @@ public class Conector {
     private Status status;
     private String erro;
     private Mensagem mens;
+    private List<ButtonIot> buttons = new ArrayList<>();
+    public List<ButtonIot> getButtons() {
+        return buttons;
+    }
+    public void setButtons(List<ButtonIot> buttons) {
+        this.buttons = buttons;
+    }
+    private String idConector;
+    public String getIdConector() {
+        return idConector;
+    }
+    public void setIdConector(String idConector) {
+        this.idConector = idConector;
+    }
+    private List<Conector> conectores;
+
+    public List<Conector> getConectores() {
+        return conectores;
+    }
+
+    public void setConectores(List<Conector> conectores) {
+        this.conectores = conectores;
+    }
 }

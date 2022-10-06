@@ -6,6 +6,7 @@ public class ButtonIot {
     private Status status;
     private String jSon;
     private Status funcao;
+    private String nick;
 
     public Status getFuncao() {
         return funcao;
@@ -47,4 +48,8 @@ public class ButtonIot {
     public void setStatus(Status status) {
         this.status = status;
     }
+
+    public String getNick(){return this.nick;}
+
+    public void setNick(String nick) {this.nick = nick;}
 }

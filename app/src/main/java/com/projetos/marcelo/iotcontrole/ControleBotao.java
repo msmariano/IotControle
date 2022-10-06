@@ -38,6 +38,8 @@ public class ControleBotao extends AsyncTask {
     private final String LIGADO = "#00ff00";
     private final String NAOINICIALIZADO = "#fff000";
     private Socket socketEnviaSemFechar;
+    private Socket socketComm;
+    private BufferedReader entrada;
     private AppCompatActivity act;
     private Integer buttonID;
     private String iotDst;
@@ -50,6 +52,24 @@ public class ControleBotao extends AsyncTask {
     private String nome;
     private EditText log;
     private List<Integer> idsBt = new ArrayList<Integer>();
+    private String servidor;
+    private Integer porta;
+    private List<Conector> conectores;
+    private String idConector;
+    private String nomeServidor;
+    private String nomeIot;
+    private List<ControleBotao> listaCbGlobal;
+    private Conector conLocal;
+
+    public String getServidor(){return this.servidor;}
+    public void setServidor(String servidor) {this.servidor = servidor;}
+    public Integer getPorta(){return this.porta;}
+    public void setPorta(Integer porta) {this.porta = porta;}
+    public List<Conector> getConectores(){return this.conectores;}
+    public void setConectores(List<Conector> conectores) {this.conectores = conectores;}
+    public String getIdConector(){return this.idConector;}
+    public void setIdConector(String idConector) {this.idConector = idConector;}
+
     public ControleBotao() {
 
     }
@@ -203,6 +223,16 @@ public class ControleBotao extends AsyncTask {
             }
         });
     }
+    void atualizaImagemErro() {
+        act.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                Drawable img = act.getResources().getDrawable(R.drawable.erro);
+                img.setBounds(0, 0, 60, 60);
+                act.runOnUiThread(() -> btn.setCompoundDrawables(img, null, null, null));
+            }
+        });
+    }
 
     public String gerarBotoesJson(com.projetos.marcelo.iotcontrole.Status st, Integer botaoId, String iotDst) {
         Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
@@ -253,38 +283,6 @@ public class ControleBotao extends AsyncTask {
 
     public void atualizar() throws IOException {
 
-
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    socketEnviaSemFechar = new Socket();
-                    socketEnviaSemFechar.setSoTimeout(5000);
-                    SocketAddress socketAddress = new InetSocketAddress(cfg.getServidor(), cfg.getPortaservidor());
-                    socketEnviaSemFechar.connect(socketAddress, 5000);
-                }
-                catch (Exception e){
-
-                }
-                while (socketEnviaSemFechar.isConnected()) {
-                    try {
-                        //Teste de exaustao
-                        //if(buttonID == 1)
-                        //    new ControleBotao().execute(self);
-                        String jSon = gerarConectorJson(com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND, com.projetos.marcelo.iotcontrole.Status.READ, cfg.getNomeiot(), buttonID);
-                        enviaSemFechar(jSon);
-                        Thread.sleep(500);
-                    } catch (Exception e) {
-                        System.err.println("Erro atualizar: " + e.getMessage());
-                    }
-                }
-                try {
-                    socketEnviaSemFechar.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }.start();
     }
 
     private void log(String text) {
@@ -318,15 +316,16 @@ public class ControleBotao extends AsyncTask {
         ControleBotao ct;
         Object obj = objects[0];
         ct = (ControleBotao) obj;
-        com.projetos.marcelo.iotcontrole.Status loginwithcommand = com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND;
-        com.projetos.marcelo.iotcontrole.Status acionarbotao = com.projetos.marcelo.iotcontrole.Status.ACIONARBOTAO;
+        //com.projetos.marcelo.iotcontrole.Status loginwithcommand = com.projetos.marcelo.iotcontrole.Status.LOGINWITHCOMMAND;
+        //com.projetos.marcelo.iotcontrole.Status acionarbotao = com.projetos.marcelo.iotcontrole.Status.ACIONARBOTAO;
         //com.projetos.marcelo.iotcontrole.Status acionarbotao = com.projetos.marcelo.iotcontrole.Status.OUT;
-        if(statusRetornado == null)
-            statusRetornado = com.projetos.marcelo.iotcontrole.Status.OFF;
-        com.projetos.marcelo.iotcontrole.Status read = com.projetos.marcelo.iotcontrole.Status.READ;
-        String jSon = ct.gerarConectorJson(loginwithcommand, acionarbotao, ct.cfg.getNomeiot(), ct.buttonID);
-        ct.envia(jSon);
-        ct.envia(ct.gerarConectorJson(loginwithcommand, read, ct.cfg.getNomeiot(), ct.buttonID));
+        //if(statusRetornado == null)
+        //    statusRetornado = com.projetos.marcelo.iotcontrole.Status.OFF;
+        //com.projetos.marcelo.iotcontrole.Status read = com.projetos.marcelo.iotcontrole.Status.READ;
+        //String jSon = ct.gerarConectorJson(loginwithcommand, acionarbotao, ct.cfg.getNomeiot(), ct.buttonID);
+        ct.click();
+        //ct.envia(jSon);
+        //ct.envia(ct.gerarConectorJson(loginwithcommand, read, ct.cfg.getNomeiot(), ct.buttonID));
         return null;
     }
 
@@ -487,6 +486,50 @@ public class ControleBotao extends AsyncTask {
         return true;
     }
 
+    public boolean click(){
+        Conector conLocal = null;
+        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+        ControleRest controleRest = new ControleRest();
+        controleRest.setIp(servidor);
+        controleRest.setPorta(porta);
+        for(Conector conector : conectores){
+            for(ButtonIot bIot : conector.getButtons()){
+                if(bIot.getButtonID().equals(buttonID)){
+                    if(bIot.getStatus().equals(com.projetos.marcelo.iotcontrole.Status.ON)) {
+                        bIot.setStatus(com.projetos.marcelo.iotcontrole.Status.OFF);
+                        atualizaImagemDesLigada();
+                    }
+                    else {
+                        bIot.setStatus(com.projetos.marcelo.iotcontrole.Status.ON);
+                        atualizaImagemLigada();
+                    }
+                    conLocal = conector;
+                    String jSonBtn = gson.toJson(conector.getButtons());
+                    conector.getIot().setjSon(jSonBtn);
+                    break;
+                }
+            }
+        }
+        if(conLocal != null) {
+            Rest rest = new Rest();
+            rest.setPorta(String.valueOf(porta));
+            rest.setIp(servidor);
+            rest.setUri("/ServidorIOT/comando");
+
+            String json = gson.toJson(conLocal);
+            try {
+                String ret = rest.sendRest(json);
+                if(!ret.equals("Ok!")){
+                    atualizaImagemErro();
+                }
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
     public boolean envia(String textJson) {
         try {
             Socket socket = new Socket();
@@ -566,6 +609,118 @@ public class ControleBotao extends AsyncTask {
                     System.out.println();
                 }
             }
+        }
+    }
+
+    public String getNomeServidor() {
+        return nomeServidor;
+    }
+
+    public void setNomeServidor(String nomeServidor) {
+        this.nomeServidor = nomeServidor;
+    }
+
+    public String getNomeIot() {
+        return nomeIot;
+    }
+
+    public void setNomeIot(String nomeIot) {
+        this.nomeIot = nomeIot;
+    }
+
+    public List<ControleBotao> getListaCbGlobal() {
+        return listaCbGlobal;
+    }
+
+    public void setListaCbGlobal(List<ControleBotao> listaCbGlobal) {
+        this.listaCbGlobal = listaCbGlobal;
+    }
+
+    public void atualizarClick(){
+
+    }
+
+    public void comm(Conector conCom){
+        conLocal = new Conector();
+        conLocal.setStatus(com.projetos.marcelo.iotcontrole.Status.LOGIN);
+        conLocal.setUsuario("msmariano");
+        conLocal.setSenha("mar0403");
+        conLocal.setNome("Marcelo dos Santos Mariano - Usuario");
+        conLocal.setTipo(TipoIOT.CONTROLEREMOTO);
+        conLocal.setConectores(new ArrayList<>());
+
+        try {
+            new Thread() {
+                @Override
+                public void run() {
+                    while (true) {
+                        socketComm = new Socket();
+                        try {
+                            //socketComm.setSoTimeout(5000);
+                            SocketAddress socketAddress = new InetSocketAddress(cfg.getServidor(), cfg.getPortaservidor());
+                            socketComm.connect(socketAddress, 5000);
+                            Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+                            String textJson = gson.toJson(conLocal);
+                            PrintWriter out = new PrintWriter(
+                                    new BufferedWriter(new OutputStreamWriter(
+                                            socketComm.getOutputStream())), true);
+                            out.println(textJson);
+
+
+                            entrada = new BufferedReader(new InputStreamReader(socketComm.getInputStream()));
+                            while(socketComm.isConnected()) {
+                                try {
+                                    String mens = null;
+
+                                    mens = entrada.readLine();
+                                    if (mens == null) {
+                                        socketComm.close();
+                                        break;
+                                    }
+                                    if(mens.substring(0,1).equals("[")){
+                                        Type listType = new TypeToken<ArrayList<Conector>>(){}.getType();
+                                        List<Conector> conectores =gson.fromJson(mens, listType);
+                                        for(Conector con: conectores){
+                                            for(ButtonIot bIot : con.getButtons()){
+                                                for (ControleBotao cb : listaCbGlobal){
+                                                    if(bIot.getButtonID().equals(cb.getButtonID())){
+                                                        if(bIot.getStatus().equals(com.projetos.marcelo.iotcontrole.Status.ON))
+                                                            cb.atualizaImagemLigada();
+                                                        else
+                                                            cb.atualizaImagemDesLigada();
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        System.out.println("atualizar...");
+                                    }
+                                    else {
+                                        Conector conLogin = null;
+                                        conLogin = gson.fromJson(mens, Conector.class);
+                                        if (conLogin.getStatus().equals(com.projetos.marcelo.iotcontrole.Status.LOGIN_OK)) {
+                                            System.out.println("logado...");
+                                        }
+                                    }
+                                }
+                                catch (Exception e){
+                                    break;
+                                }
+                            }
+                            socketComm.close();
+                        } catch (Exception e) {
+                            System.out.println(e.getMessage());
+                        }
+                        socketComm = null;
+                        try {
+                            Thread.sleep(30000);
+                        } catch (InterruptedException e) {
+                        }
+                    }
+                }
+            }.start();
+        }
+        catch (Exception e){
         }
     }
 }
