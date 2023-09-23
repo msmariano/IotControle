@@ -118,7 +118,6 @@ public class SettingsActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
-        progressBar = findViewById(R.id.progressBar2);
         instancia = this;
 
         try {

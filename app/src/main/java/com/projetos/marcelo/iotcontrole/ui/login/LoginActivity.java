@@ -74,9 +74,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onAuthenticationError(int errorCode,
                                               @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
-                Toast.makeText(getApplicationContext(),
-                        "Authentication error: " + errString, Toast.LENGTH_SHORT)
-                        .show();
+
             }
 
             @Override
@@ -94,8 +92,8 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
 
-        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-        startActivity(intent);
+        //Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        //startActivity(intent);
 
         promptInfo = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Neuverse Controle IOT")
@@ -103,7 +101,10 @@ public class LoginActivity extends AppCompatActivity {
                 .setNegativeButtonText("Usar Pin")
                 .build();
 
-        biometricPrompt.authenticate(promptInfo);
+        //biometricPrompt.authenticate(promptInfo);
+
+        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        startActivity(intent);
 
         loginViewModel.getLoginFormState().observe(this, new Observer<LoginFormState>() {
             @Override
@@ -175,37 +176,10 @@ public class LoginActivity extends AppCompatActivity {
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                /*loadingProgressBar.setVisibility(View.VISIBLE);
-                // can be launched in a separate asynchronous job
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Conector conector = new Conector();
-                        conector.setUsuario(usernameEditText.getText().toString());
-                        conector.setSenha(passwordEditText.getText().toString());
-                        conector.setStatus(Status.LOGIN);
-                        conector.setTipo(TipoIOT.HUMAN);
-                        Conexao conexao = new Conexao();
-                        conexao.setServidor("192.168.0.116");
-                        conexao.setPorta(27015);
-                        conexao.envia(conector);
-                        if(conexao.getListaConector().size()>0){
-                            if(conexao.getListaConector().get(0).getStatus().equals(Status.LOGIN_OK)){
-                                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                startActivity(intent);
 
-                            }
-                        }
-                        loadingProgressBar.setVisibility(View.INVISIBLE);
-                    }
-                });
 
-                t.start();
-
-                while(t.isAlive());*/
-
-                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                startActivity(intent);
+                //Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                //startActivity(intent);
 
 
             }

@@ -27,7 +27,7 @@
     <string name="attachment_summary_off">Only download attachments when manually requested</string>
 
     <string-array name="iotOpts"></string-array>
-    <string name="title_activity_login">LoginActivity</string>
+    <string name="title_activity_login">Controle</string>
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
     <string name="action_sign_in">Sign in or register</string>

@@ -13,6 +13,8 @@ public class Dispositivo {
     @Expose(serialize = true)
     private String nick;
 
+    private String idpool;
+
     public boolean on() {
         return false;
     }
@@ -49,4 +51,11 @@ public class Dispositivo {
         this.nick = nick;
     }
 
+    public String getIdpool() {
+        return idpool;
+    }
+
+    public void setIdpool(String idpool) {
+        this.idpool = idpool;
+    }
 }

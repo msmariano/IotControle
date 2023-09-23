@@ -88,6 +88,7 @@ public class Rest {
         String urlS = "https://"+ip+":"+porta+uri;
         URL url = new URL(urlS);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setConnectTimeout(500);
         con.setRequestMethod(HttpMethod.POST);
         con.setRequestProperty("Content-Type", "application/json");
         con.setRequestProperty("Host", ip);
