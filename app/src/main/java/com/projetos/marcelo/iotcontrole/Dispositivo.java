@@ -7,6 +7,14 @@ public class Dispositivo {
     @Expose(serialize = true)
     private Status status;
 
+    public String getEndServidor() {
+        return endServidor;
+    }
+
+    public void setEndServidor(String endServidor) {
+        this.endServidor = endServidor;
+    }
+
     @Expose(serialize = true)
     private Integer id;
 
@@ -14,6 +22,8 @@ public class Dispositivo {
     private String nick;
 
     private String idpool;
+
+    private String endServidor;
 
     public boolean on() {
         return false;

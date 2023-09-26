@@ -154,6 +154,7 @@ public class CustomAdapter  extends BaseAdapter {
                         btnParent.setCompoundDrawables(img, null, null, null);
                         String jSon = gson.toJson(listaPool);
                         System.out.println(jSon);
+                        rest.setIp(dispbutton.getDispositivo().getEndServidor());
                         rest.setUri("/ServidorIOT/atualizar");
                         try {
                             jSon = rest.sendRest(jSon);

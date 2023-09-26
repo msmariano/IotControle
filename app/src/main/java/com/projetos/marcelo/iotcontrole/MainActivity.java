@@ -151,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
                 for (Pool pool : pools) {
                     for (Dispositivo dispositivo : pool.getDispositivos()) {
                         dispositivo.setIdpool(pool.getId());
+                        dispositivo.setEndServidor(ret);
                     }
                     dispositivos.addAll(pool.getDispositivos());
                 }
