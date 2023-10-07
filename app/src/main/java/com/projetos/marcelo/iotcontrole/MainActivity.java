@@ -34,7 +34,8 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+
+public class MainActivity extends AppCompatActivity  {
 
     SQLiteDatabase mydatabase;
     AppCompatActivity activity;
@@ -73,9 +74,17 @@ public class MainActivity extends AppCompatActivity {
             StrictMode.ThreadPolicy gfgPolicy =
                     new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(gfgPolicy);
+            simpleList = (ListView) findViewById(R.id.simpleListView);
+
+            /*ClienteMQTT clienteMQTT = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse", "M@r040370");
+            clienteMQTT.iniciar();
+            clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events/#");
+            clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/lista");
+            Thread.sleep(1000);
+            clienteMQTT.publicar("br/com/neuverse/geral/info",  "Cliente".getBytes(), 1);*/
 
 
-            String ret = "";
+            /*String ret = "";
             try {
                 for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en
                         .hasMoreElements();) {
@@ -108,61 +117,73 @@ public class MainActivity extends AppCompatActivity {
                         String ip[] = new String[4];
                         String ipComposto[] = ipE.split(";");
                         Integer octfinal = Integer.valueOf(ipComposto[3]);
-                        if(!encontrado) {
-                            for (int i = 1; i < 255; i++) {
-                                if (octfinal != i) {
-                                    String ipTeste = ipComposto[0] + "." + ipComposto[1] + "." + ipComposto[2] + "." + i;
-                                    rest.setIp(ipTeste);
-                                    rest.setUri("/ServidorIOT/info");
-                                    try {
-                                        String jSon = rest.sendRest("");
-                                        if (!jSon.equals("")) {
-                                            Toast.makeText(getApplicationContext(), "ServidorIOT encontrado, gravando configuração!", Toast.LENGTH_LONG).show();
-                                            ret = ipTeste;
-                                            encontrado = true;
-                                            salvarCfgServidor(ipTeste);
-                                            break;
-                                        }
-                                    } catch (Exception e) {
 
+                        for (int i = 1; i < 255; i++) {
+                            if (octfinal != i) {
+                                String ipTeste = ipComposto[0] + "." + ipComposto[1] + "." + ipComposto[2] + "." + i;
+                                rest.setIp(ipTeste);
+                                rest.setUri("/ServidorIOT/info");
+                                try {
+                                    String jSon = rest.sendRest("");
+                                    if (!jSon.equals("")) {
+                                        Toast.makeText(getApplicationContext(), "ServidorIOT encontrado, gravando configuração!", Toast.LENGTH_LONG).show();
+                                        ret = ipTeste+";"+lerCfgServidor();
+                                        encontrado = true;
+                                        salvarCfgServidor(ipTeste);
+                                        break;
                                     }
+                                } catch (Exception e) {
+
                                 }
                             }
                         }
-                        else
-                            break;
                     }
                 }
                 catch(Exception e){
                 }
             }
-            else
-                ret = lerCfgServidor();
 
-            rest.setIp(ret);
-            rest.setUri("/ServidorIOT/listar");
-            try {
-                String jSon = rest.sendRest("");
-                Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-                List<Dispositivo> dispositivos = new ArrayList<>();
-                Type listType = new TypeToken<ArrayList<Pool>>() {
-                }.getType();
-                List<Pool> pools = gson.fromJson(jSon, listType);
-                for (Pool pool : pools) {
-                    for (Dispositivo dispositivo : pool.getDispositivos()) {
-                        dispositivo.setIdpool(pool.getId());
-                        dispositivo.setEndServidor(ret);
-                    }
-                    dispositivos.addAll(pool.getDispositivos());
-                }
-                simpleList = (ListView) findViewById(R.id.simpleListView);
-                CustomAdapter arrayAdapter = new CustomAdapter(this, dispositivos);
-                simpleList.setAdapter(arrayAdapter);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            ret = lerCfgServidor();
+
+            acrescentarServidorIOT(ret);*/
+
+
         } catch (Exception e) {
             System.out.println(e.getMessage());
+        }
+    }
+    /*@Override
+    public void messageArrived(String topic, MqttMessage message) throws Exception {
+        if (topic.equals("br/com/neuverse/servidores/lista")) {
+
+        }
+    }*/
+
+    public void acrescentarServidorIOT(String ip){
+        try {
+            Rest rest = new Rest();
+            rest.setPorta("27016");
+            rest.setIp(ip);
+            rest.setUri("/ServidorIOT/listar");
+
+            String jSon = rest.sendRest("");
+            Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+            List<Dispositivo> dispositivos = new ArrayList<>();
+            Type listType = new TypeToken<ArrayList<Pool>>() {
+            }.getType();
+            List<Pool> pools = gson.fromJson(jSon, listType);
+            for (Pool pool : pools) {
+                for (Dispositivo dispositivo : pool.getDispositivos()) {
+                    dispositivo.setIdpool(pool.getId());
+                    dispositivo.setEndServidor(ip);
+                }
+                dispositivos.addAll(pool.getDispositivos());
+            }
+
+            CustomAdapter arrayAdapter = new CustomAdapter(this, dispositivos);
+            simpleList.setAdapter(arrayAdapter);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
