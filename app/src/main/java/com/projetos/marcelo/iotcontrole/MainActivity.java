@@ -22,6 +22,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.projetos.marcelo.iotcontrole.ui.login.LoginActivity;
 
+import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.reflect.Type;
@@ -35,11 +38,12 @@ import java.util.Iterator;
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity  {
+public class MainActivity extends AppCompatActivity implements IMqttMessageListener {
 
     SQLiteDatabase mydatabase;
     AppCompatActivity activity;
     ListView simpleList;
+    List<Dispositivo> dispositivos = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,12 +80,12 @@ public class MainActivity extends AppCompatActivity  {
             StrictMode.setThreadPolicy(gfgPolicy);
             simpleList = (ListView) findViewById(R.id.simpleListView);
 
-            /*ClienteMQTT clienteMQTT = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse", "M@r040370");
+            ClienteMQTT clienteMQTT = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse", "M@r040370");
             clienteMQTT.iniciar();
             clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events/#");
             clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/lista");
             Thread.sleep(1000);
-            clienteMQTT.publicar("br/com/neuverse/geral/info",  "Cliente".getBytes(), 1);*/
+            clienteMQTT.publicar("br/com/neuverse/geral/info",  "Cliente".getBytes(), 1);
 
 
             /*String ret = "";
@@ -152,30 +156,30 @@ public class MainActivity extends AppCompatActivity  {
             System.out.println(e.getMessage());
         }
     }
-    /*@Override
+    @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         if (topic.equals("br/com/neuverse/servidores/lista")) {
-
+            acrescentarServidorIOT(new String(message.getPayload()));
         }
-    }*/
+    }
 
-    public void acrescentarServidorIOT(String ip){
+    public void acrescentarServidorIOT(String jSon){
         try {
-            Rest rest = new Rest();
+            /*Rest rest = new Rest();
             rest.setPorta("27016");
             rest.setIp(ip);
             rest.setUri("/ServidorIOT/listar");
 
-            String jSon = rest.sendRest("");
+            String jSon = rest.sendRest("");*/
             Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-            List<Dispositivo> dispositivos = new ArrayList<>();
+
             Type listType = new TypeToken<ArrayList<Pool>>() {
             }.getType();
             List<Pool> pools = gson.fromJson(jSon, listType);
             for (Pool pool : pools) {
                 for (Dispositivo dispositivo : pool.getDispositivos()) {
                     dispositivo.setIdpool(pool.getId());
-                    dispositivo.setEndServidor(ip);
+                    dispositivo.setEndServidor("");
                 }
                 dispositivos.addAll(pool.getDispositivos());
             }
@@ -216,4 +220,5 @@ public class MainActivity extends AppCompatActivity  {
         } catch (Exception e) {;
         }
     }
+
 }
