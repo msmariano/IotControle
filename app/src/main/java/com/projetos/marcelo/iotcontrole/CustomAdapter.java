@@ -34,51 +34,8 @@ public class CustomAdapter  extends BaseAdapter {
     }
 
     public void monitora(){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while(true) {
-                    try {
-                        Thread.sleep(1000);
-                        Rest rest = new Rest();
-                        rest.setIp("192.168.18.58");
-                        rest.setPorta("27016");
-                        rest.setUri("/ServidorIOT/listar");
-                        String jSon = rest.sendRest("");
-                        if(jSon != null &&!jSon.trim().equals("")) {
-                            Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-                            List<Dispositivo> dispositivos = new ArrayList<>();
-                            Type listType = new TypeToken<ArrayList<Pool>>() {
-                            }.getType();
-                            List<Pool> pools = gson.fromJson(jSon, listType);
-                            for (Pool pool : pools) {
-                                for (Dispositivo dispositivo : pool.getDispositivos()) {
-                                    for (DispositivoButton dispositivoButton : listaCb) {
-                                        if (pool.getId().equals(dispositivoButton.getPoolId())) {
-                                            if (dispositivoButton.getBtn() != null) {
-                                                Drawable img;
-                                                if (dispositivo.getStatus().equals(Status.ON)) {
-                                                    img = context.getResources().getDrawable(R.drawable.lacessa);
-                                                } else {
-                                                    img = context.getResources().getDrawable(R.drawable.b983w);
-                                                }
-                                                img.setBounds(0, 0, 60, 60);
-                                                dispositivoButton.getBtn().setCompoundDrawables(img, null, null, null);
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
 
-                    } catch (Exception e) {
-                    }
-                }
-            }
-        });
     }
-
     @Override
     public int getCount() {
         return dispositivos.size();
@@ -129,9 +86,9 @@ public class CustomAdapter  extends BaseAdapter {
             @Override
             public void onClick(View v) {
                 Button btnParent = (Button) v;
-                Rest rest = new Rest();
+                /*Rest rest = new Rest();
                 rest.setIp("192.168.18.58");
-                rest.setPorta("27016");
+                rest.setPorta("27016");*/
                 Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
                 for (DispositivoButton dispbutton : listaCb){
                     if(dispbutton.getBtn().equals(btnParent)){
@@ -154,14 +111,14 @@ public class CustomAdapter  extends BaseAdapter {
                         btnParent.setCompoundDrawables(img, null, null, null);
                         String jSon = gson.toJson(listaPool);
                         System.out.println(jSon);
-                        rest.setIp(dispbutton.getDispositivo().getEndServidor());
 
-                        rest.setUri("/ServidorIOT/atualizar");
-                        try {
-                            jSon = rest.sendRest(jSon);
-                        } catch (Exception e) {
-                            System.out.println(e.getMessage());
-                        }
+
+                        ClienteMQTT clienteMQTTSend = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse",
+                                "M@r040370");
+                        clienteMQTTSend.iniciar();
+                        clienteMQTTSend.publicar("br/com/neuverse/servidores/" + pool.getId() + "/atualizar", jSon.getBytes(), 0);
+                        clienteMQTTSend.finalizar();
+
                         break;
                     }
                 }
