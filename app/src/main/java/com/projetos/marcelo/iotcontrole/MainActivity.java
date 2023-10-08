@@ -2,8 +2,10 @@ package com.projetos.marcelo.iotcontrole;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -36,6 +38,8 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
     boolean inserido = false;
 
     boolean inicializado = false;
+
+    CustomAdapter arrayAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
                 StrictMode.setThreadPolicy(gfgPolicy);
                 clienteMQTT = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse", "M@r040370");
                 clienteMQTT.iniciar();
-                clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events/#");
+                clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events");
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/lista");
                 //clienteMQTT.publicar("br/com/neuverse/geral/info", "Cliente".getBytes(), 1);
                 simpleList = (ListView) findViewById(R.id.simpleListView);
@@ -95,13 +99,42 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         System.out.println(new String(message.getPayload()));
         if (topic.equals("br/com/neuverse/servidores/lista")) {
-
-                acrescentarServidorIOT(new String(message.getPayload()));
-
+            acrescentarServidorIOT(new String(message.getPayload()));
+        }
+        else if (topic.equals("br/com/neuverse/servidores/events")) {
+            handleEvent(new String(message.getPayload()));
         }
     }
 
-    public void acrescentarServidorIOT(String jSon){
+    public synchronized void handleEvent(String json){
+        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+        Type listType = new TypeToken<ArrayList<Pool>>() {
+        }.getType();
+        List<Pool> pools = gson.fromJson(json, listType);
+        for (Pool pool : pools) {
+            for (Dispositivo dispositivo : pool.getDispositivos()) {
+                Button btn = arrayAdapter.getItemByIdPoolIdDisp(dispositivo.getNick());
+                if(btn!=null){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Drawable img;
+                            if(dispositivo.getStatus().equals(Status.ON)){
+                                img = activity.getResources().getDrawable(R.drawable.lacessa);
+                            }
+                            else {
+                                img = activity.getResources().getDrawable(R.drawable.b983w);
+                            }
+                            img.setBounds(0, 0, 60, 60);
+                            btn.setCompoundDrawables(img, null, null, null);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    public synchronized void  acrescentarServidorIOT(String jSon){
         try {
 
             Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
@@ -112,18 +145,23 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
             for (Pool pool : pools) {
                 for (Dispositivo dispositivo : pool.getDispositivos()) {
                     dispositivo.setIdpool(pool.getId());
-                    dispositivo.setEndServidor("");
-                    dispositivos.add(dispositivo);
+                    boolean naLista = false;
+                    for(Dispositivo dsp : dispositivos){
+                        if(dsp.getIdpool().equals(pool.getId()) && dsp.getId().equals(dispositivo.getId())){
+                            naLista = true;
+                            break;
+                        }
+                    }
+                    if(!naLista)
+                        dispositivos.add(dispositivo);
                 }
             }
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-
-                        CustomAdapter arrayAdapter = new CustomAdapter(activity, dispositivos);
-                        simpleList.setAdapter(arrayAdapter);
-
+                    arrayAdapter = new CustomAdapter(activity, dispositivos);
+                    simpleList.setAdapter(arrayAdapter);
                 }
             });
 

@@ -22,12 +22,13 @@ public class CustomAdapter  extends BaseAdapter {
 
     private Context context;
 
-    private List<DispositivoButton> listaCb = new ArrayList<>();
+    private List<DispositivoButton> listaCb;
 
     private List<Dispositivo> dispositivos;
 
     public CustomAdapter(Context context, List<Dispositivo> disps ) {
-
+        listaCb = null;
+        listaCb = new ArrayList<>();
         this.context = context;
         dispositivos = disps;
         monitora();
@@ -41,6 +42,14 @@ public class CustomAdapter  extends BaseAdapter {
         return dispositivos.size();
     }
 
+    public Button getItemByIdPoolIdDisp(String nick){
+        for (DispositivoButton dispbutton : listaCb){
+            if(dispbutton.getBtn().getText().equals(nick)){
+                return dispbutton.getBtn();
+            }
+        }
+        return null;
+    }
     @Override
     public Object getItem(int position) {
         return dispositivos.get(position);
@@ -59,18 +68,18 @@ public class CustomAdapter  extends BaseAdapter {
             view = inflater.inflate(R.layout.activity_list_view, null);
         }
 
-        //Handle TextView and display string from your list
-        TextView tvContact= (TextView)view.findViewById(R.id.tvContact);
-        //tvContact.setText(list.get(position));
+
 
         //Handle buttons and add onClickListeners
-        Button callbtn= (Button)view.findViewById(R.id.btn);
+        Button callbtn= view.findViewById(R.id.btn);
         DispositivoButton dispbutton = new DispositivoButton();
         dispbutton.setBtn(callbtn);
         dispbutton.setDipositivoId(dispositivos.get(position).getId());
         dispbutton.setPoolId(dispositivos.get(position).getIdpool());
         dispbutton.setDispositivo(dispositivos.get(position));
+
         listaCb.add(dispbutton);
+
         Drawable img ;
         callbtn.setBackgroundColor(Color.rgb(255, 255, 255));
         callbtn.setText(dispositivos.get(position).getNick());
@@ -86,12 +95,10 @@ public class CustomAdapter  extends BaseAdapter {
             @Override
             public void onClick(View v) {
                 Button btnParent = (Button) v;
-                /*Rest rest = new Rest();
-                rest.setIp("192.168.18.58");
-                rest.setPorta("27016");*/
+
                 Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
                 for (DispositivoButton dispbutton : listaCb){
-                    if(dispbutton.getBtn().equals(btnParent)){
+                    if(dispbutton.getDispositivo().getNick().equals(btnParent.getText())){
                         List<Pool> listaPool = new ArrayList<>();
                         Pool pool = new Pool();
                         pool.setId(dispbutton.getPoolId());
@@ -116,7 +123,8 @@ public class CustomAdapter  extends BaseAdapter {
                         ClienteMQTT clienteMQTTSend = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse",
                                 "M@r040370");
                         clienteMQTTSend.iniciar();
-                        clienteMQTTSend.publicar("br/com/neuverse/servidores/" + pool.getId() + "/atualizar", jSon.getBytes(), 0);
+                        String topic = "br/com/neuverse/servidores/" + pool.getId() + "/atualizar";
+                        clienteMQTTSend.publicar(topic, jSon.getBytes(), 0);
                         clienteMQTTSend.finalizar();
 
                         break;
