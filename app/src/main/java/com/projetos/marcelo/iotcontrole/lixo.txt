@@ -1,0 +1,16 @@
+//Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+        //startActivity(intent);
+        //clienteMQTT.publicar("br/com/neuverse/geral/info", "Cliente".getBytes(), 1);
+        //Toast.makeText(getApplicationContext(), "Publicado pedido de info!", Toast.LENGTH_LONG).show();
+
+//Configuracao.deleteAll(Configuracao.class);
+
+        mydatabase = openOrCreateDatabase("cfg.db", MODE_PRIVATE, null);
+        //mydatabase.execSQL("DROP tABLE IF EXISTS PARAMETRO");
+        //mydatabase.execSQL("DROP TABLE IF EXISTS CONFIGURACAO");
+        mydatabase.execSQL("CREATE TABLE IF NOT EXISTS Configuracao(ID INTEGER,SERVIDOR VARCHAR," +
+                "PORTASERVIDOR INTEGER,USUARIO VARCHAR,SENHA VARCHAR,NOMEIOTCOM VARCHAR," +
+                "NOMEIOT VARCHAR, NOMEBOTAO VARCHAR,IDBOTAO INTEGER );");
+        mydatabase.execSQL("CREATE TABLE IF NOT EXISTS PARAMETRO(ID INTEGER,PARAMETRO VARCHAR,CAMPO1 VARCHAR,CAMPO2 VARCHAR);");
+//Toast.makeText(getApplicationContext(), "Inicializado", Toast.LENGTH_LONG).show();
+ //clienteMQTT.publicar("br/com/neuverse/geral/info", "Cliente".getBytes(), 1);

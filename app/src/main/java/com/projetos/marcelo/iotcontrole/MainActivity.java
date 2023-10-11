@@ -5,6 +5,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -24,7 +26,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 
 public class MainActivity extends AppCompatActivity implements IMqttMessageListener {
@@ -33,13 +38,11 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
     AppCompatActivity activity;
     ListView simpleList;
     List<Dispositivo> dispositivos = new ArrayList<>();
-
     ClienteMQTT clienteMQTT;
     boolean inserido = false;
-
     boolean inicializado = false;
+    public CustomAdapter arrayAdapter;
 
-    CustomAdapter arrayAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,28 +50,21 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         setContentView(R.layout.activity_main);
         this.setTitle("Controle");
         activity = this;
+        //calendar.setTime(new Date());
         FloatingActionButton btCfg = findViewById(R.id.bCfg);
-        btCfg.setOnClickListener(view -> {
-            //Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-            //startActivity(intent);
-            //clienteMQTT.publicar("br/com/neuverse/geral/info", "Cliente".getBytes(), 1);
-            //Toast.makeText(getApplicationContext(), "Publicado pedido de info!", Toast.LENGTH_LONG).show();
+        btCfg.setOnClickListener(view -> {});
+        inicializarMqtt();
+    }
 
-        });
-        //Configuracao.deleteAll(Configuracao.class);
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
 
-        mydatabase = openOrCreateDatabase("cfg.db", MODE_PRIVATE, null);
-        //mydatabase.execSQL("DROP tABLE IF EXISTS PARAMETRO");
-        //mydatabase.execSQL("DROP TABLE IF EXISTS CONFIGURACAO");
-        mydatabase.execSQL("CREATE TABLE IF NOT EXISTS Configuracao(ID INTEGER,SERVIDOR VARCHAR," +
-                "PORTASERVIDOR INTEGER,USUARIO VARCHAR,SENHA VARCHAR,NOMEIOTCOM VARCHAR," +
-                "NOMEIOT VARCHAR, NOMEBOTAO VARCHAR,IDBOTAO INTEGER );");
-        mydatabase.execSQL("CREATE TABLE IF NOT EXISTS PARAMETRO(ID INTEGER,PARAMETRO VARCHAR,CAMPO1 VARCHAR,CAMPO2 VARCHAR);");
-
+    public void inicializarMqtt(){
         try {
-            if(!inicializado) {
+            if (!inicializado) {
                 inicializado = true;
-
                 StrictMode.ThreadPolicy gfgPolicy =
                         new StrictMode.ThreadPolicy.Builder().permitAll().build();
                 StrictMode.setThreadPolicy(gfgPolicy);
@@ -76,37 +72,28 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
                 clienteMQTT.iniciar();
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events");
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/lista");
-                //clienteMQTT.publicar("br/com/neuverse/geral/info", "Cliente".getBytes(), 1);
                 simpleList = (ListView) findViewById(R.id.simpleListView);
-                clienteMQTT.publicar("br/com/neuverse/geral/info", "Cliente".getBytes(), 1);
-                //Toast.makeText(getApplicationContext(), "Inicializado", Toast.LENGTH_LONG).show();
+                UUID uniqueKey = UUID.randomUUID();
+                String idGerado = uniqueKey.toString();
+                clienteMQTT.publicar("br/com/neuverse/geral/info", idGerado.getBytes(), 1);
+                arrayAdapter = new CustomAdapter(activity, dispositivos);
+                simpleList.setAdapter(arrayAdapter);
             }
-        }
-        catch (Exception e){
-
-        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        try {
         } catch (Exception e) {
-            System.out.println(e.getMessage());
         }
     }
+
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         System.out.println(new String(message.getPayload()));
         if (topic.equals("br/com/neuverse/servidores/lista")) {
             acrescentarServidorIOT(new String(message.getPayload()));
-        }
-        else if (topic.equals("br/com/neuverse/servidores/events")) {
+        } else if (topic.equals("br/com/neuverse/servidores/events")) {
             handleEvent(new String(message.getPayload()));
         }
     }
 
-    public synchronized void handleEvent(String json){
+    public synchronized void handleEvent(String json) {
         Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
         Type listType = new TypeToken<ArrayList<Pool>>() {
         }.getType();
@@ -114,16 +101,40 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         for (Pool pool : pools) {
             for (Dispositivo dispositivo : pool.getDispositivos()) {
                 Button btn = arrayAdapter.getItemByIdPoolIdDisp(dispositivo.getNick());
-                if(btn!=null){
+                if (btn != null) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            btn.setVisibility(View.VISIBLE);
                             Drawable img;
-                            if(dispositivo.getStatus().equals(Status.ON)){
-                                img = activity.getResources().getDrawable(R.drawable.lacessa);
-                            }
-                            else {
-                                img = activity.getResources().getDrawable(R.drawable.b983w);
+                            if (dispositivo.getStatus().equals(Status.ON)) {
+                                if(dispositivo.getNivelAcionamento().equals(Status.HIGH)){
+                                    if (!dispositivo.getNick().toString().toLowerCase().contains("luz"))
+                                        img = activity.getResources().getDrawable(R.drawable.intligado);
+                                    else
+                                        img = activity.getResources().getDrawable(R.drawable.lacessa);
+                                }
+                                else{
+                                    if (!dispositivo.getNick().toString().toLowerCase().contains("luz"))
+                                        img = activity.getResources().getDrawable(R.drawable.intdesligado);
+                                    else
+                                        img = activity.getResources().getDrawable(R.drawable.b983w);
+                                }
+
+                            } else {
+                                if(dispositivo.getNivelAcionamento().equals(Status.LOW)){
+                                    if (!dispositivo.getNick().toString().toLowerCase().contains("luz"))
+                                        img = activity.getResources().getDrawable(R.drawable.intligado);
+                                    else
+                                        img = activity.getResources().getDrawable(R.drawable.lacessa);
+                                }
+                                else{
+                                    if (!dispositivo.getNick().toString().toLowerCase().contains("luz"))
+                                        img = activity.getResources().getDrawable(R.drawable.intdesligado);
+                                    else
+                                        img = activity.getResources().getDrawable(R.drawable.b983w);
+                                }
+
                             }
                             img.setBounds(0, 0, 60, 60);
                             btn.setCompoundDrawables(img, null, null, null);
@@ -134,71 +145,71 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         }
     }
 
-    public synchronized void  acrescentarServidorIOT(String jSon){
+    public synchronized void acrescentarServidorIOT(String jSon) {
         try {
-
-            Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-
-            Type listType = new TypeToken<ArrayList<Pool>>() {
-            }.getType();
-            List<Pool> pools = gson.fromJson(jSon, listType);
-            for (Pool pool : pools) {
-                for (Dispositivo dispositivo : pool.getDispositivos()) {
-                    dispositivo.setIdpool(pool.getId());
-                    boolean naLista = false;
-                    for(Dispositivo dsp : dispositivos){
-                        if(dsp.getIdpool().equals(pool.getId()) && dsp.getId().equals(dispositivo.getId())){
-                            naLista = true;
-                            break;
-                        }
-                    }
-                    if(!naLista)
-                        dispositivos.add(dispositivo);
-                }
-            }
-
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    arrayAdapter = new CustomAdapter(activity, dispositivos);
-                    simpleList.setAdapter(arrayAdapter);
+                    Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+                    Type listType = new TypeToken<ArrayList<Pool>>() {
+                    }.getType();
+                    List<Pool> pools = gson.fromJson(jSon, listType);
+                    for (Pool pool : pools) {
+                        for (Dispositivo dispositivo : pool.getDispositivos()) {
+                            dispositivo.setIdpool(pool.getId());
+                            if (pool.getNick() != null && pool.getNick().trim().length() > 0)
+                                dispositivo.setNickServidor(pool.getNick());
+                            else
+                                dispositivo.setNickServidor("Sem nome");
+                            boolean naLista = false;
+                            for (Dispositivo dsp : dispositivos) {
+                                if (dsp.getIdpool().equals(pool.getId()) && dsp.getId().equals(dispositivo.getId())) {
+                                    naLista = true;
+                                    break;
+                                }
+                            }
+                            if (!naLista)
+                                dispositivos.add(dispositivo);
+                        }
+                    }
+                    activity.runOnUiThread(() -> arrayAdapter.notifyDataSetChanged());
                 }
             });
-
-
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public String lerCfgServidor(){
+    public String lerCfgServidor() {
         String fileName = "Cfg";
         FileInputStream inputStream = null;
-        String s="";
+        String s = "";
         try {
             inputStream = openFileInput(fileName);
 
             int i = inputStream.read();
-            if(i != -1)
-                s = s+(char)i;
-            while( i != -1){
+            if (i != -1)
+                s = s + (char) i;
+            while (i != -1) {
                 i = inputStream.read();
-                if(i != -1)
-                    s = s+(char)i;
+                if (i != -1)
+                    s = s + (char) i;
             }
         } catch (Exception e) {
         }
         return s;
     }
-    public void salvarCfgServidor(String endServidor){
+
+    public void salvarCfgServidor(String endServidor) {
         String fileName = "Cfg";
         FileOutputStream outputStream = null;
         try {
             outputStream = openFileOutput(fileName, Context.MODE_PRIVATE);
             outputStream.write(endServidor.getBytes());
             outputStream.close();
-        } catch (Exception e) {;
+        } catch (Exception e) {
+            ;
         }
     }
 

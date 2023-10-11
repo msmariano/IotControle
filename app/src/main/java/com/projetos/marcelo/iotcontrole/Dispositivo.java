@@ -23,7 +23,33 @@ public class Dispositivo {
 
     private String idpool;
 
+    private String nickServidor;
+
     private String endServidor;
+
+    @Expose(serialize = true)
+    private TipoIOT genero;
+
+    @Expose(serialize = true)
+    private Status nivelAcionamento;
+
+    public TipoIOT getGenero() {
+        return genero;
+    }
+
+    public void setGenero(TipoIOT genero) {
+        this.genero = genero;
+    }
+
+    public Status getNivelAcionamento() {
+        return nivelAcionamento;
+    }
+
+    public void setNivelAcionamento(Status nivelAcionamento) {
+        this.nivelAcionamento = nivelAcionamento;
+    }
+
+
 
     public boolean on() {
         return false;
@@ -59,6 +85,14 @@ public class Dispositivo {
 
     public void setNick(String nick) {
         this.nick = nick;
+    }
+
+    public String getNickServidor() {
+        return nickServidor;
+    }
+
+    public void setNickServidor(String arg) {
+        this.nickServidor = arg;
     }
 
     public String getIdpool() {

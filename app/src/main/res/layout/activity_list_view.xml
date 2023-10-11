@@ -5,11 +5,20 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <EditText
+        android:id="@+id/txt"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#64286E"
+        android:backgroundTint="@color/colorAccent"
+        android:ems="10"
+        android:inputType="text" />
+
     <Button
         android:id="@+id/btn"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Call" />
+        android:text="Button" />
 
 
 </LinearLayout>

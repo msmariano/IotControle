@@ -8,9 +8,18 @@ import java.util.UUID;
 
 public class Pool {
     @Expose(serialize = true)
+    private String nick;
+    @Expose(serialize = true)
     private String id;
     @Expose(serialize = true)
     private List<Dispositivo> dispositivos = new ArrayList<>();
+
+    public String getNick(){
+        return nick;
+    }
+    public void setNick(String arg){
+        nick = arg;
+    }
 
     public Dispositivo buscar(Integer id){
         for (Dispositivo dispositivo : dispositivos){

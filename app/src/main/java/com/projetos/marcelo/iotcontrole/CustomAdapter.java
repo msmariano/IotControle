@@ -14,9 +14,12 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import org.w3c.dom.Text;
+
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class CustomAdapter  extends BaseAdapter {
 
@@ -25,6 +28,8 @@ public class CustomAdapter  extends BaseAdapter {
     private List<DispositivoButton> listaCb;
 
     private List<Dispositivo> dispositivos;
+
+    private String  atualNickServidor = "";
 
     public CustomAdapter(Context context, List<Dispositivo> disps ) {
         listaCb = null;
@@ -50,6 +55,10 @@ public class CustomAdapter  extends BaseAdapter {
         }
         return null;
     }
+
+    public void addItem(Dispositivo dsp){
+
+    }
     @Override
     public Object getItem(int position) {
         return dispositivos.get(position);
@@ -63,10 +72,37 @@ public class CustomAdapter  extends BaseAdapter {
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
         View view = convertView;
+        TextView txt = null;
         if (view == null) {
             LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             view = inflater.inflate(R.layout.activity_list_view, null);
+
+
+            /*if(!atualNickServidor.equals(dispositivos.get(position).getNickServidor())){
+                atualNickServidor = dispositivos.get(position).getNickServidor();
+                txt.setText(dispositivos.get(position).getNickServidor());
+                txt.setVisibility(View.VISIBLE);
+            }
+            else {
+                txt.setVisibility(View.INVISIBLE);
+            }*/
+
         }
+        String texto = dispositivos.get(position).getNickServidor();
+
+        /*try {
+            if (!atualNickServidor.equals(dispositivos.get(position).getNickServidor())) {
+                atualNickServidor = dispositivos.get(position).getNickServidor();
+                if(dispositivos.get(position).getNickServidor()!=null)
+                    texto = dispositivos.get(position).getNickServidor();
+            }
+        }
+        catch (Exception e){
+
+        }*/
+
+        txt = view.findViewById(R.id.txt);
+        txt.setText(texto);
 
 
 
@@ -84,10 +120,33 @@ public class CustomAdapter  extends BaseAdapter {
         callbtn.setBackgroundColor(Color.rgb(255, 255, 255));
         callbtn.setText(dispositivos.get(position).getNick());
         if(dispositivos.get(position).getStatus().equals(Status.ON)){
-            img = view.getResources().getDrawable(R.drawable.lacessa);
+            if(dispositivos.get(position).getNivelAcionamento().equals(Status.HIGH)){
+                if (!dispositivos.get(position).getNick().toString().toLowerCase().contains("luz"))
+                    img = view.getResources().getDrawable(R.drawable.intligado);
+                else
+                    img = view.getResources().getDrawable(R.drawable.lacessa);
+            }
+            else {
+                if (!dispositivos.get(position).getNick().toString().toLowerCase().contains("luz"))
+                    img = view.getResources().getDrawable(R.drawable.intdesligado);
+                else
+                    img = view.getResources().getDrawable(R.drawable.b983w);
+            }
         }
         else {
-            img = view.getResources().getDrawable(R.drawable.b983w);
+            if(dispositivos.get(position).getNivelAcionamento().equals(Status.LOW)){
+                if (!dispositivos.get(position).getNick().toString().toLowerCase().contains("luz"))
+                    img = view.getResources().getDrawable(R.drawable.intligado);
+                else
+                    img = view.getResources().getDrawable(R.drawable.lacessa);
+            }
+            else{
+                if (!dispositivos.get(position).getNick().toString().toLowerCase().contains("luz"))
+                    img = view.getResources().getDrawable(R.drawable.intdesligado);
+                else
+                    img = view.getResources().getDrawable(R.drawable.b983w);
+            }
+
         }
         img.setBounds(0, 0, 60, 60);
         callbtn.setCompoundDrawables(img, null, null, null);
@@ -105,19 +164,25 @@ public class CustomAdapter  extends BaseAdapter {
                         pool.setDispositivos(new ArrayList<>());
                         pool.getDispositivos().add(dispbutton.getDispositivo());
                         listaPool.add(pool);
-                        Drawable img;
+                        Drawable img = context.getResources().getDrawable(R.drawable.branco1);;
                         if(dispbutton.getDispositivo().getStatus().equals(Status.ON)){
                             dispbutton.getDispositivo().setStatus(Status.OFF);
-                            img = context.getResources().getDrawable(R.drawable.b983w);
+                            /*if (dispbutton.getDispositivo().getNick().toString().toLowerCase().equals("bomba do filtro"))
+                                img = context.getResources().getDrawable(R.drawable.intligado);
+                            else
+                                img = context.getResources().getDrawable(R.drawable.b983w);*/
                         }
                         else {
                             dispbutton.getDispositivo().setStatus(Status.ON);
-                            img = context.getResources().getDrawable(R.drawable.lacessa);
+                            /*if (dispbutton.getDispositivo().getNick().toString().toLowerCase().equals("bomba do filtro"))
+                                img = context.getResources().getDrawable(R.drawable.intdesligado);
+                            else
+                                img = context.getResources().getDrawable(R.drawable.lacessa);*/
                         }
                         img.setBounds(0, 0, 60, 60);
                         btnParent.setCompoundDrawables(img, null, null, null);
                         String jSon = gson.toJson(listaPool);
-                        System.out.println(jSon);
+                        //System.out.println(jSon);
 
 
                         ClienteMQTT clienteMQTTSend = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse",
