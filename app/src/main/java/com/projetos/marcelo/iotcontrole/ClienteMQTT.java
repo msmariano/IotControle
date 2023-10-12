@@ -2,6 +2,8 @@ package com.projetos.marcelo.iotcontrole;
 
 
 import java.util.Arrays;
+import java.util.UUID;
+
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
@@ -16,7 +18,7 @@ public class ClienteMQTT implements MqttCallbackExtended {
 
     private final String serverURI;
     private MqttClient client;
-    private final MqttConnectOptions mqttOptions;
+    public  MqttConnectOptions mqttOptions;
 
     public ClienteMQTT(String serverURI, String usuario, String senha) {
         this.serverURI = serverURI;
@@ -64,8 +66,10 @@ public class ClienteMQTT implements MqttCallbackExtended {
 
     public void iniciar() {
         try {
+            UUID uniqueKey = UUID.randomUUID();
+            String idGerado = uniqueKey.toString();
             System.out.println("Conectando no broker MQTT em " + serverURI);
-            client = new MqttClient(serverURI, String.format("cliente_java_%d", System.currentTimeMillis()), new MqttDefaultFilePersistence(System.getProperty("java.io.tmpdir")));
+            client = new MqttClient(serverURI, idGerado, new MqttDefaultFilePersistence(System.getProperty("java.io.tmpdir")));
             client.setCallback(this);
             client.connect(mqttOptions);
         } catch (MqttException ex) {

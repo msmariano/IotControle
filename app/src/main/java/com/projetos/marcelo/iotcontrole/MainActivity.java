@@ -22,14 +22,24 @@ import com.google.gson.GsonBuilder;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Type;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 
 public class MainActivity extends AppCompatActivity implements IMqttMessageListener {
@@ -61,32 +71,76 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         super.onResume();
     }
 
+    private SSLContext getSslContext(Context context) throws Exception {
+        // Charger le certificat CA
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        InputStream caInput = context.getResources().openRawResource(R.raw.ca);
+        X509Certificate caCertificate;
+        try {
+            caCertificate = (X509Certificate) cf.generateCertificate(caInput);
+        } finally {
+            caInput.close();
+        }
+        String keyStoreType = KeyStore.getDefaultType();
+        KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+        keyStore.load(null, null);
+        keyStore.setCertificateEntry("ca", caCertificate);
+
+        // Créer un TrustManager qui fait confiance au keystore
+        String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
+        tmf.init(keyStore);
+
+
+
+        // Créer un KeyManager à partir du keystore du client
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(keyStore, null);
+
+        // Créer un SSLContext qui utilise notre TrustManager et KeyManager
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+        return sslContext;
+    }
+
     public void inicializarMqtt(){
         try {
             if (!inicializado) {
                 inicializado = true;
+
+                SSLContext sslContext;
+                sslContext = getSslContext(activity);
+
+
+
+
+                UUID uniqueKey = UUID.randomUUID();
+                String idGerado = uniqueKey.toString();
                 StrictMode.ThreadPolicy gfgPolicy =
                         new StrictMode.ThreadPolicy.Builder().permitAll().build();
                 StrictMode.setThreadPolicy(gfgPolicy);
-                clienteMQTT = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse", "M@r040370");
+                clienteMQTT = new ClienteMQTT("ssl://73cd8514e7c447ff91d697b4b02f88c5.s1.eu.hivemq.cloud:8883","neuverse1","M@r040370");
+                clienteMQTT.mqttOptions.setSocketFactory(sslContext.getSocketFactory());
                 clienteMQTT.iniciar();
+
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events");
-                clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/lista");
+                clienteMQTT.subscribe(0, this, "br/com/neuverse/geral/lista");
                 simpleList = (ListView) findViewById(R.id.simpleListView);
-                UUID uniqueKey = UUID.randomUUID();
-                String idGerado = uniqueKey.toString();
+
                 clienteMQTT.publicar("br/com/neuverse/geral/info", idGerado.getBytes(), 1);
                 arrayAdapter = new CustomAdapter(activity, dispositivos);
                 simpleList.setAdapter(arrayAdapter);
             }
         } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         System.out.println(new String(message.getPayload()));
-        if (topic.equals("br/com/neuverse/servidores/lista")) {
+        if (topic.equals("br/com/neuverse/geral/lista")) {
             acrescentarServidorIOT(new String(message.getPayload()));
         } else if (topic.equals("br/com/neuverse/servidores/events")) {
             handleEvent(new String(message.getPayload()));

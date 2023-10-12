@@ -16,10 +16,18 @@ import com.google.gson.GsonBuilder;
 
 import org.w3c.dom.Text;
 
+import java.io.InputStream;
 import java.lang.reflect.Type;
+import java.security.KeyStore;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 public class CustomAdapter  extends BaseAdapter {
 
@@ -184,9 +192,15 @@ public class CustomAdapter  extends BaseAdapter {
                         String jSon = gson.toJson(listaPool);
                         //System.out.println(jSon);
 
+                        SSLContext sslContext;
+                        try {
+                            sslContext = getSslContext(context);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
 
-                        ClienteMQTT clienteMQTTSend = new ClienteMQTT("tcp://broker.mqttdashboard.com:1883", "neuverse",
-                                "M@r040370");
+                        ClienteMQTT clienteMQTTSend = new ClienteMQTT("ssl://73cd8514e7c447ff91d697b4b02f88c5.s1.eu.hivemq.cloud:8883","neuverse","M@r040370");
+                        clienteMQTTSend.mqttOptions.setSocketFactory(sslContext.getSocketFactory());
                         clienteMQTTSend.iniciar();
                         String topic = "br/com/neuverse/servidores/" + pool.getId() + "/atualizar";
                         clienteMQTTSend.publicar(topic, jSon.getBytes(), 0);
@@ -202,5 +216,38 @@ public class CustomAdapter  extends BaseAdapter {
 
         return view;
 
+    }
+
+    private SSLContext getSslContext(Context context) throws Exception {
+        // Charger le certificat CA
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        InputStream caInput = context.getResources().openRawResource(R.raw.ca);
+        X509Certificate caCertificate;
+        try {
+            caCertificate = (X509Certificate) cf.generateCertificate(caInput);
+        } finally {
+            caInput.close();
+        }
+        String keyStoreType = KeyStore.getDefaultType();
+        KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+        keyStore.load(null, null);
+        keyStore.setCertificateEntry("ca", caCertificate);
+
+        // Créer un TrustManager qui fait confiance au keystore
+        String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
+        tmf.init(keyStore);
+
+
+
+        // Créer un KeyManager à partir du keystore du client
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        kmf.init(keyStore, null);
+
+        // Créer un SSLContext qui utilise notre TrustManager et KeyManager
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+
+        return sslContext;
     }
 }
