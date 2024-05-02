@@ -1,5 +1,7 @@
 package com.projetos.marcelo.iotcontrole;
 
+import android.widget.Button;
+
 import com.google.gson.annotations.Expose;
 
 public class Dispositivo {
@@ -7,13 +9,11 @@ public class Dispositivo {
     @Expose(serialize = true)
     private Status status;
 
-    public String getEndServidor() {
-        return endServidor;
-    }
+    @Expose(serialize = true)
+    private TipoIOT genero;
 
-    public void setEndServidor(String endServidor) {
-        this.endServidor = endServidor;
-    }
+    @Expose(serialize = true)
+    private Status nivelAcionamento;
 
     @Expose(serialize = true)
     private Integer id;
@@ -21,17 +21,32 @@ public class Dispositivo {
     @Expose(serialize = true)
     private String nick;
 
+    private String buttoAddress;
+
     private String idpool;
 
     private String nickServidor;
 
     private String endServidor;
 
-    @Expose(serialize = true)
-    private TipoIOT genero;
+    private Button button;
 
-    @Expose(serialize = true)
-    private Status nivelAcionamento;
+    public Button getButton() {
+        return button;
+    }
+
+    public void setButton(Button button) {
+        this.button = button;
+    }
+
+    public String getButtoAddress() {
+        return buttoAddress;
+    }
+
+    public void setButtoAddress(String buttoAddress) {
+        this.buttoAddress = buttoAddress;
+    }
+
 
     public TipoIOT getGenero() {
         return genero;
@@ -48,8 +63,6 @@ public class Dispositivo {
     public void setNivelAcionamento(Status nivelAcionamento) {
         this.nivelAcionamento = nivelAcionamento;
     }
-
-
 
     public boolean on() {
         return false;
@@ -101,5 +114,13 @@ public class Dispositivo {
 
     public void setIdpool(String idpool) {
         this.idpool = idpool;
+    }
+
+    public String getEndServidor() {
+        return endServidor;
+    }
+
+    public void setEndServidor(String endServidor) {
+        this.endServidor = endServidor;
     }
 }

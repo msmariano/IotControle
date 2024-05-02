@@ -1,5 +1,6 @@
 package com.projetos.marcelo.iotcontrole;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
@@ -8,6 +9,7 @@ import android.os.StrictMode;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -20,7 +22,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -35,15 +40,20 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 
 
 public class MainActivity extends AppCompatActivity implements IMqttMessageListener {
 
+    private final Object obj = new Object();
+    public CustomAdapter arrayAdapter;
     SQLiteDatabase mydatabase;
     AppCompatActivity activity;
     ListView simpleList;
@@ -51,18 +61,21 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
     ClienteMQTT clienteMQTT;
     boolean inserido = false;
     boolean inicializado = false;
-    public CustomAdapter arrayAdapter;
+    String idGerado = "";
 
+    ImageView img;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        img  = findViewById(R.id.imageView);
         this.setTitle("Controle");
         activity = this;
         //calendar.setTime(new Date());
         FloatingActionButton btCfg = findViewById(R.id.bCfg);
-        btCfg.setOnClickListener(view -> {});
+        btCfg.setOnClickListener(view -> {
+        });
         inicializarMqtt();
     }
 
@@ -71,69 +84,29 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         super.onResume();
     }
 
-    private SSLContext getSslContext(Context context) throws Exception {
-        // Charger le certificat CA
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        InputStream caInput = context.getResources().openRawResource(R.raw.ca);
-        X509Certificate caCertificate;
-        try {
-            caCertificate = (X509Certificate) cf.generateCertificate(caInput);
-        } finally {
-            caInput.close();
-        }
-        String keyStoreType = KeyStore.getDefaultType();
-        KeyStore keyStore = KeyStore.getInstance(keyStoreType);
-        keyStore.load(null, null);
-        keyStore.setCertificateEntry("ca", caCertificate);
 
-        // Créer un TrustManager qui fait confiance au keystore
-        String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
-        tmf.init(keyStore);
-
-
-
-        // Créer un KeyManager à partir du keystore du client
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, null);
-
-        // Créer un SSLContext qui utilise notre TrustManager et KeyManager
-        SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-
-        return sslContext;
-    }
-
-    public void inicializarMqtt(){
+    public void inicializarMqtt() {
         try {
             if (!inicializado) {
                 inicializado = true;
-
-                SSLContext sslContext;
-                sslContext = getSslContext(activity);
-
-
-
-
                 UUID uniqueKey = UUID.randomUUID();
-                String idGerado = uniqueKey.toString();
+                idGerado = uniqueKey.toString();
                 StrictMode.ThreadPolicy gfgPolicy =
                         new StrictMode.ThreadPolicy.Builder().permitAll().build();
                 StrictMode.setThreadPolicy(gfgPolicy);
-                clienteMQTT = new ClienteMQTT("ssl://73cd8514e7c447ff91d697b4b02f88c5.s1.eu.hivemq.cloud:8883","neuverse1","M@r040370");
-                clienteMQTT.mqttOptions.setSocketFactory(sslContext.getSocketFactory());
+                clienteMQTT = new ClienteMQTT("ssl://f897f821.ala.us-east-1.emqxsl.com:8883", "neuverse", "M@r040370");
+                clienteMQTT.mqttOptions.setSSLHostnameVerifier(null);
                 clienteMQTT.iniciar();
-
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events");
+                clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/"+idGerado+"/#");
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/geral/lista");
                 simpleList = (ListView) findViewById(R.id.simpleListView);
-
                 clienteMQTT.publicar("br/com/neuverse/geral/info", idGerado.getBytes(), 1);
-                arrayAdapter = new CustomAdapter(activity, dispositivos);
+                arrayAdapter = new CustomAdapter(activity, dispositivos, clienteMQTT);
                 simpleList.setAdapter(arrayAdapter);
+                monitora();
             }
         } catch (Exception e) {
-            System.out.println(e.getMessage());
         }
     }
 
@@ -144,57 +117,72 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
             acrescentarServidorIOT(new String(message.getPayload()));
         } else if (topic.equals("br/com/neuverse/servidores/events")) {
             handleEvent(new String(message.getPayload()));
-        }
-    }
+        } else if (topic.equals("br/com/neuverse/servidores/" + idGerado + "/alive")) {
+            try {
+                if(img.getVisibility() == View.VISIBLE){
 
-    public synchronized void handleEvent(String json) {
-        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-        Type listType = new TypeToken<ArrayList<Pool>>() {
-        }.getType();
-        List<Pool> pools = gson.fromJson(json, listType);
-        for (Pool pool : pools) {
-            for (Dispositivo dispositivo : pool.getDispositivos()) {
-                Button btn = arrayAdapter.getItemByIdPoolIdDisp(dispositivo.getNick());
-                if (btn != null) {
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-                            btn.setVisibility(View.VISIBLE);
-                            Drawable img;
-                            if (dispositivo.getStatus().equals(Status.ON)) {
-                                if(dispositivo.getNivelAcionamento().equals(Status.HIGH)){
-                                    if (!dispositivo.getNick().toString().toLowerCase().contains("luz"))
-                                        img = activity.getResources().getDrawable(R.drawable.intligado);
-                                    else
-                                        img = activity.getResources().getDrawable(R.drawable.lacessa);
-                                }
-                                else{
-                                    if (!dispositivo.getNick().toString().toLowerCase().contains("luz"))
-                                        img = activity.getResources().getDrawable(R.drawable.intdesligado);
-                                    else
-                                        img = activity.getResources().getDrawable(R.drawable.b983w);
-                                }
-
-                            } else {
-                                if(dispositivo.getNivelAcionamento().equals(Status.LOW)){
-                                    if (!dispositivo.getNick().toString().toLowerCase().contains("luz"))
-                                        img = activity.getResources().getDrawable(R.drawable.intligado);
-                                    else
-                                        img = activity.getResources().getDrawable(R.drawable.lacessa);
-                                }
-                                else{
-                                    if (!dispositivo.getNick().toString().toLowerCase().contains("luz"))
-                                        img = activity.getResources().getDrawable(R.drawable.intdesligado);
-                                    else
-                                        img = activity.getResources().getDrawable(R.drawable.b983w);
-                                }
-
-                            }
-                            img.setBounds(0, 0, 60, 60);
-                            btn.setCompoundDrawables(img, null, null, null);
+                            img.setVisibility(View.INVISIBLE);
                         }
                     });
+
                 }
+                else
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            img.setVisibility(View.VISIBLE);
+                        }
+                    });
+
+            } catch (Exception e) {
+                System.out.println();
+            }
+        }
+    }
+
+    @SuppressLint("UseCompatLoadingForDrawables")
+    public synchronized void handleEvent(String json) {
+        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+        List<Pool> pools = gson.fromJson(json, new TypeToken<ArrayList<Pool>>() {
+        }.getType());
+        for (Pool pool : pools) {
+            for (Dispositivo dispositivo : pool.getDispositivos()) {
+                Button btn = arrayAdapter.getItemByIdPoolIdDisp(pool.getId(), dispositivo.getId());
+                Drawable img;
+                if (dispositivo.getStatus().equals(Status.ON)) {
+                    if (dispositivo.getNivelAcionamento().equals(Status.HIGH)) {
+                        if (!dispositivo.getNick().toLowerCase().contains("luz"))
+                            img = activity.getResources().getDrawable(R.drawable.intligado);
+                        else
+                            img = activity.getResources().getDrawable(R.drawable.lacessa);
+                    } else {
+                        if (!dispositivo.getNick().toLowerCase().contains("luz"))
+                            img = activity.getResources().getDrawable(R.drawable.intdesligado);
+                        else
+                            img = activity.getResources().getDrawable(R.drawable.b983w);
+                    }
+
+                } else {
+                    if (dispositivo.getNivelAcionamento().equals(Status.LOW)) {
+                        if (!dispositivo.getNick().toLowerCase().contains("luz"))
+                            img = activity.getResources().getDrawable(R.drawable.intligado);
+                        else
+                            img = activity.getResources().getDrawable(R.drawable.lacessa);
+                    } else {
+                        if (!dispositivo.getNick().toLowerCase().contains("luz"))
+                            img = activity.getResources().getDrawable(R.drawable.intdesligado);
+                        else
+                            img = activity.getResources().getDrawable(R.drawable.b983w);
+                    }
+
+                }
+                img.setBounds(0, 0, 60, 60);
+
+                btn.setCompoundDrawables(img, null, null, null);
+
             }
         }
     }
@@ -217,7 +205,8 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
                                 dispositivo.setNickServidor("Sem nome");
                             boolean naLista = false;
                             for (Dispositivo dsp : dispositivos) {
-                                if (dsp.getIdpool().equals(pool.getId()) && dsp.getId().equals(dispositivo.getId())) {
+                                if (dsp.getIdpool().equals(pool.getId()) && dsp.getId()
+                                        .equals(dispositivo.getId())) {
                                     naLista = true;
                                     break;
                                 }
@@ -231,7 +220,6 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
             });
 
         } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -263,8 +251,46 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
             outputStream.write(endServidor.getBytes());
             outputStream.close();
         } catch (Exception e) {
-            ;
         }
+    }
+
+
+    public void monitora() {
+        new Thread() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+
+                        Thread.sleep(2000);
+                        if (clienteMQTT.getClient().isConnected()) {
+
+                            clienteMQTT.getClient().publish("br/com/neuverse/servidores/" + idGerado + "/alive",
+                                    "alive".getBytes(),
+                                    0, false);
+
+                        } else {
+                            try {
+                                clienteMQTT.getClient().close();
+                                clienteMQTT.setClient(null);
+                                MqttClient cli = new MqttClient("ssl://f897f821.ala.us-east-1.emqxsl.com:8883", idGerado,
+                                        new MqttDefaultFilePersistence(Objects.requireNonNull(System.getProperty("java.io.tmpdir"))));
+                                clienteMQTT.setClient(cli);
+                                clienteMQTT.getClient().setCallback(clienteMQTT);
+                                clienteMQTT.mqttOptions.setSSLHostnameVerifier(null);
+                                clienteMQTT.getClient().connect(clienteMQTT.getMqttOptions());
+
+
+                            } catch (MqttException ex) {
+
+                            }
+                        }
+                    } catch (Exception e) {
+
+                    }
+                }
+            }
+        }.start();
     }
 
 }

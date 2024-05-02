@@ -7,6 +7,16 @@ public class DispositivoButton {
 
     private Dispositivo dispositivo;
 
+    private String ObjectID;
+
+    public String getObjectID() {
+        return ObjectID;
+    }
+
+    public void setObjectID(String objectID) {
+        ObjectID = objectID;
+    }
+
     public Dispositivo getDispositivo() {
         return dispositivo;
     }

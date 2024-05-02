@@ -18,6 +18,23 @@ public class ClienteMQTT implements MqttCallbackExtended {
 
     private final String serverURI;
     private MqttClient client;
+
+    public MqttClient getClient() {
+        return client;
+    }
+
+    public void setClient(MqttClient client) {
+        this.client = client;
+    }
+
+    public MqttConnectOptions getMqttOptions() {
+        return mqttOptions;
+    }
+
+    public void setMqttOptions(MqttConnectOptions mqttOptions) {
+        this.mqttOptions = mqttOptions;
+    }
+
     public  MqttConnectOptions mqttOptions;
 
     public ClienteMQTT(String serverURI, String usuario, String senha) {
