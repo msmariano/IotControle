@@ -14,6 +14,17 @@ public class Pool {
     @Expose(serialize = true)
     private List<Dispositivo> dispositivos = new ArrayList<>();
 
+    public String getOrigemID() {
+        return origemID;
+    }
+
+    public void setOrigemID(String origemID) {
+        this.origemID = origemID;
+    }
+
+    @Expose(serialize = true)
+    private String origemID;
+
     public String getNick(){
         return nick;
     }

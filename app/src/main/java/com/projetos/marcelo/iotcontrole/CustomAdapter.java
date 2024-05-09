@@ -42,12 +42,23 @@ public class CustomAdapter  extends BaseAdapter {
 
     private String atualNickServidor = "";
 
-    public CustomAdapter(Context context, List<Dispositivo> disps, ClienteMQTT clienteMQTTArg) {
+    private String uuid;
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    public CustomAdapter(Context context, List<Dispositivo> disps, ClienteMQTT clienteMQTTArg,String uuidArg) {
         listaCb = null;
         listaCb = new ArrayList<>();
         clienteMQTT = clienteMQTTArg;
         this.context = context;
         dispositivos = disps;
+        uuid = uuidArg;
         monitora();
     }
 
@@ -109,11 +120,11 @@ public class CustomAdapter  extends BaseAdapter {
         callbtn.setBackgroundColor(Color.rgb(255, 255, 255));
         callbtn.setText(dispositivos.get(position).getNick());
         if(dispositivos.get(position).getGenero().equals(TipoIOT.PUSHBUTTON)){
-            img = view.getResources().getDrawable(R.drawable.pushbutton);
+            img = view.getResources().getDrawable(R.drawable.intdesligado);
             //callbtn.setEnabled(true);
         }
         else if(dispositivos.get(position).getGenero().equals(TipoIOT.NOTIFICACAO)){
-            img = view.getResources().getDrawable(R.drawable.semnotificacao);
+            img = view.getResources().getDrawable(R.drawable.intdesligado);
             //callbtn.setEnabled(false);
         }
         else if (dispositivos.get(position).getStatus().equals(Status.ON)) {
@@ -154,6 +165,7 @@ public class CustomAdapter  extends BaseAdapter {
                 Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
                 List<Pool> pools = new ArrayList<>();
                 Pool pool = new Pool();
+                pool.setOrigemID(uuid);
                 pool.setId(dispositivo.getIdpool());
                 pool.setDispositivos(new ArrayList<>());
                 pool.getDispositivos().add(dispositivo);

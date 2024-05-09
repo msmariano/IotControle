@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.view.LayoutInflater;
@@ -63,6 +65,8 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
     boolean inicializado = false;
     String idGerado = "";
 
+    Usuario usuario = new Usuario();
+
     ImageView img;
 
     @Override
@@ -89,20 +93,30 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         try {
             if (!inicializado) {
                 inicializado = true;
-                UUID uniqueKey = UUID.randomUUID();
-                idGerado = uniqueKey.toString();
+                //UUID uniqueKey = UUID.randomUUID();
+                //idGerado = uniqueKey.toString();
                 StrictMode.ThreadPolicy gfgPolicy =
                         new StrictMode.ThreadPolicy.Builder().permitAll().build();
                 StrictMode.setThreadPolicy(gfgPolicy);
+
+
+                usuario.setNome("Celular do Marcelo");
+                usuario.setId(String.valueOf(System.currentTimeMillis()));
+                Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+                String jSon = gson.toJson(usuario);
+
                 clienteMQTT = new ClienteMQTT("ssl://f897f821.ala.us-east-1.emqxsl.com:8883", "neuverse", "M@r040370");
                 clienteMQTT.mqttOptions.setSSLHostnameVerifier(null);
                 clienteMQTT.iniciar();
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events");
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/"+idGerado+"/#");
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/geral/lista");
+                clienteMQTT.subscribe(0, this, "br/com/neuverse/cliente/"+usuario.getId());
                 simpleList = (ListView) findViewById(R.id.simpleListView);
-                clienteMQTT.publicar("br/com/neuverse/geral/info", idGerado.getBytes(), 1);
-                arrayAdapter = new CustomAdapter(activity, dispositivos, clienteMQTT);
+
+                clienteMQTT.publicar("br/com/neuverse/geral/geradoruuid", jSon.getBytes(), 1);
+                //clienteMQTT.publicar("br/com/neuverse/geral/info", idGerado.getBytes(), 1);
+                arrayAdapter = new CustomAdapter(activity, dispositivos, clienteMQTT,idGerado);
                 simpleList.setAdapter(arrayAdapter);
                 monitora();
             }
@@ -113,7 +127,26 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         System.out.println(new String(message.getPayload()));
-        if (topic.equals("br/com/neuverse/geral/lista")) {
+
+        if(topic.equals("br/com/neuverse/cliente/"+usuario.getId())){
+            String jSon = new String(message.getPayload());
+            Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+            Usuario usuarioRetorno = gson.fromJson(jSon,Usuario.class);
+            usuario.setUuid(usuarioRetorno.getUuid());
+            salvarUsuario();
+            if(usuarioRetorno.getId().equals(usuario.getId())){
+                idGerado = usuarioRetorno.getUuid();
+                new Thread() {
+                    @Override
+                    public void run() {
+                        clienteMQTT.publicar("br/com/neuverse/geral/info", usuarioRetorno.getUuid().getBytes(), 1);
+                    }
+                }.start();
+
+                //arrayAdapter = new CustomAdapter(activity, dispositivos, clienteMQTT,idGerado);
+                //simpleList.setAdapter(arrayAdapter);
+            }
+        } else if (topic.equals("br/com/neuverse/geral/lista")) {
             acrescentarServidorIOT(new String(message.getPayload()));
         } else if (topic.equals("br/com/neuverse/servidores/events")) {
             handleEvent(new String(message.getPayload()));
@@ -241,6 +274,18 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         } catch (Exception e) {
         }
         return s;
+    }
+
+    public void salvarUsuario(){
+        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+        String json = gson.toJson(usuario);
+        FileOutputStream outputStream = null;
+        try {
+            outputStream = openFileOutput("usuario", Context.MODE_PRIVATE);
+            outputStream.write(json.getBytes());
+            outputStream.close();
+        } catch (Exception e) {
+        }
     }
 
     public void salvarCfgServidor(String endServidor) {
