@@ -2,6 +2,7 @@ package com.projetos.marcelo.iotcontrole;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
 import android.net.wifi.WifiInfo;
@@ -65,12 +66,23 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
     boolean inicializado = false;
     String idGerado = "";
 
-    Usuario usuario = new Usuario();
+    String user = "";
+
+    String uuidCliente = "";
+
+    private String uuids[];
 
     ImageView img;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        Intent it = getIntent();
+
+        //Recuperei a string da outra activity
+        uuids = it.getStringArrayExtra  ("uuids");
+        idGerado = it.getStringExtra("idGerado");
+        user = it.getStringExtra("user");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         img  = findViewById(R.id.imageView);
@@ -93,67 +105,47 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         try {
             if (!inicializado) {
                 inicializado = true;
-                //UUID uniqueKey = UUID.randomUUID();
-                //idGerado = uniqueKey.toString();
                 StrictMode.ThreadPolicy gfgPolicy =
                         new StrictMode.ThreadPolicy.Builder().permitAll().build();
                 StrictMode.setThreadPolicy(gfgPolicy);
-
-
-                usuario.setNome("Celular do Marcelo");
-                usuario.setId(String.valueOf(System.currentTimeMillis()));
-                Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-                String jSon = gson.toJson(usuario);
-
                 clienteMQTT = new ClienteMQTT("ssl://f897f821.ala.us-east-1.emqxsl.com:8883", "neuverse", "M@r040370");
                 clienteMQTT.mqttOptions.setSSLHostnameVerifier(null);
-                clienteMQTT.iniciar();
+                clienteMQTT.iniciar(user);
                 clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/events");
-                clienteMQTT.subscribe(0, this, "br/com/neuverse/servidores/"+idGerado+"/#");
-                clienteMQTT.subscribe(0, this, "br/com/neuverse/geral/lista");
-                clienteMQTT.subscribe(0, this, "br/com/neuverse/cliente/"+usuario.getId());
                 simpleList = (ListView) findViewById(R.id.simpleListView);
+                Login login = new Login();
+                login.setUuid(idGerado);
+                Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+                String jSon = gson.toJson(login);
+                for ( String uuid : uuids){
+                    clienteMQTT.subscribe(0,this,"br/com/neuverse/clientes/"+idGerado+"/#");
+                    new Thread() {
+                        @Override
+                        public void run() {
 
-                clienteMQTT.publicar("br/com/neuverse/geral/geradoruuid", jSon.getBytes(), 1);
-                //clienteMQTT.publicar("br/com/neuverse/geral/info", idGerado.getBytes(), 1);
+                            clienteMQTT.publicar("br/com/neuverse/servidores/"+uuid+"/info",jSon.getBytes(), 1);
+                        }
+                    }.start();
+                }
                 arrayAdapter = new CustomAdapter(activity, dispositivos, clienteMQTT,idGerado);
                 simpleList.setAdapter(arrayAdapter);
                 monitora();
             }
         } catch (Exception e) {
+            System.out.println(e.getMessage());
         }
     }
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         System.out.println(new String(message.getPayload()));
-
-        if(topic.equals("br/com/neuverse/cliente/"+usuario.getId())){
-            String jSon = new String(message.getPayload());
-            Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-            Usuario usuarioRetorno = gson.fromJson(jSon,Usuario.class);
-            usuario.setUuid(usuarioRetorno.getUuid());
-            salvarUsuario();
-            if(usuarioRetorno.getId().equals(usuario.getId())){
-                idGerado = usuarioRetorno.getUuid();
-                new Thread() {
-                    @Override
-                    public void run() {
-                        clienteMQTT.publicar("br/com/neuverse/geral/info", usuarioRetorno.getUuid().getBytes(), 1);
-                    }
-                }.start();
-
-                //arrayAdapter = new CustomAdapter(activity, dispositivos, clienteMQTT,idGerado);
-                //simpleList.setAdapter(arrayAdapter);
-            }
-        } else if (topic.equals("br/com/neuverse/geral/lista")) {
+        if (topic.equals("br/com/neuverse/clientes/"+idGerado+"/infoServidor")) {
             acrescentarServidorIOT(new String(message.getPayload()));
         } else if (topic.equals("br/com/neuverse/servidores/events")) {
             handleEvent(new String(message.getPayload()));
         } else if (topic.equals("br/com/neuverse/servidores/" + idGerado + "/alive")) {
             try {
                 if(img.getVisibility() == View.VISIBLE){
-
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -277,7 +269,7 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
     }
 
     public void salvarUsuario(){
-        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
+        /*Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
         String json = gson.toJson(usuario);
         FileOutputStream outputStream = null;
         try {
@@ -285,7 +277,7 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
             outputStream.write(json.getBytes());
             outputStream.close();
         } catch (Exception e) {
-        }
+        }*/
     }
 
     public void salvarCfgServidor(String endServidor) {

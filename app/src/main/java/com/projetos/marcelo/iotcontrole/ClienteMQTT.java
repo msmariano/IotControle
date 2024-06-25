@@ -81,10 +81,10 @@ public class ClienteMQTT implements MqttCallbackExtended {
         }
     }
 
-    public void iniciar() {
+    public void iniciar(String login) {
         try {
             UUID uniqueKey = UUID.randomUUID();
-            String idGerado = uniqueKey.toString();
+            String idGerado = login+"_"+uniqueKey.toString();
             System.out.println("Conectando no broker MQTT em " + serverURI);
             client = new MqttClient(serverURI, idGerado, new MqttDefaultFilePersistence(System.getProperty("java.io.tmpdir")));
             client.setCallback(this);
