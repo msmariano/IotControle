@@ -168,46 +168,40 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         }
     }
 
+    public Drawable putImagem(Dispositivo dispositivo){
+        Drawable img = null;
+        switch (dispositivo.getGenero().getValor()){
+            case  1:
+                img = (dispositivo.getStatus().equals(Status.ON) && dispositivo.getNivelAcionamento().equals(Status.HIGH)) ||
+                        (dispositivo.getStatus().equals(Status.OFF) && dispositivo.getNivelAcionamento().equals(Status.LOW))
+                        ? activity.getResources().getDrawable(R.drawable.lacessa)
+                        :  activity.getResources().getDrawable(R.drawable.b983w);
+                break;
+            case 15:
+                img = activity.getResources().getDrawable(R.drawable.pushbutton);
+                break;
+            case 11:
+            default:
+                img = (dispositivo.getStatus().equals(Status.ON)&& dispositivo.getNivelAcionamento().equals(Status.HIGH)) ||
+                        (dispositivo.getStatus().equals(Status.OFF) && dispositivo.getNivelAcionamento().equals(Status.LOW))
+                        ? activity.getResources().getDrawable(R.drawable.intligado)
+                        :  activity.getResources().getDrawable(R.drawable.intdesligado);
+                break;
+        }
+        return img;
+    }
+
     @SuppressLint("UseCompatLoadingForDrawables")
     public synchronized void handleEvent(String json) {
-        Gson gson = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create();
-        List<Pool> pools = gson.fromJson(json, new TypeToken<ArrayList<Pool>>() {
-        }.getType());
+        List<Pool> pools = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create()
+                .fromJson(json, new TypeToken<ArrayList<Pool>>() {}.getType());
+
         for (Pool pool : pools) {
             for (Dispositivo dispositivo : pool.getDispositivos()) {
                 Button btn = arrayAdapter.getItemByIdPoolIdDisp(pool.getId(), dispositivo.getId());
-                Drawable img;
-                if (dispositivo.getStatus().equals(Status.ON)) {
-                    if (dispositivo.getNivelAcionamento().equals(Status.HIGH)) {
-                        if (!dispositivo.getNick().toLowerCase().contains("luz"))
-                            img = activity.getResources().getDrawable(R.drawable.intligado);
-                        else
-                            img = activity.getResources().getDrawable(R.drawable.lacessa);
-                    } else {
-                        if (!dispositivo.getNick().toLowerCase().contains("luz"))
-                            img = activity.getResources().getDrawable(R.drawable.intdesligado);
-                        else
-                            img = activity.getResources().getDrawable(R.drawable.b983w);
-                    }
-
-                } else {
-                    if (dispositivo.getNivelAcionamento().equals(Status.LOW)) {
-                        if (!dispositivo.getNick().toLowerCase().contains("luz"))
-                            img = activity.getResources().getDrawable(R.drawable.intligado);
-                        else
-                            img = activity.getResources().getDrawable(R.drawable.lacessa);
-                    } else {
-                        if (!dispositivo.getNick().toLowerCase().contains("luz"))
-                            img = activity.getResources().getDrawable(R.drawable.intdesligado);
-                        else
-                            img = activity.getResources().getDrawable(R.drawable.b983w);
-                    }
-
-                }
+                Drawable img = putImagem(dispositivo);
                 img.setBounds(0, 0, 60, 60);
-
                 btn.setCompoundDrawables(img, null, null, null);
-
             }
         }
     }
