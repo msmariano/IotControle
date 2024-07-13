@@ -80,6 +80,10 @@ public class LoginActivity extends AppCompatActivity implements IMqttMessageList
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+
+
+
+
         super.onCreate(savedInstanceState);
         la = this;
         binding = ActivityLoginBinding.inflate(getLayoutInflater());
@@ -92,6 +96,8 @@ public class LoginActivity extends AppCompatActivity implements IMqttMessageList
         final EditText passwordEditText = binding.password;
         final Button loginButton = binding.login;
         final ProgressBar loadingProgressBar = binding.loading;
+
+
 
 
 
@@ -121,14 +127,27 @@ public class LoginActivity extends AppCompatActivity implements IMqttMessageList
 
         //Intent intent = new Intent(LoginActivity.this, MainActivity.class);
         //startActivity(intent);
+        loginViewModel.getLoginFormState().observe(this, new Observer<LoginFormState>() {
+            @Override
+            public void onChanged(@Nullable LoginFormState loginFormState) {
+                if (loginFormState == null) {
+                    return;
+                }
+                loginButton.setEnabled(loginFormState.isDataValid());
+                if (loginFormState.getUsernameError() != null) {
+                    usernameEditText.setError(getString(loginFormState.getUsernameError()));
+                }
+                if (loginFormState.getPasswordError() != null) {
+                    passwordEditText.setError(getString(loginFormState.getPasswordError()));
+                }
+            }
+        });
 
         promptInfo = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Neuverse Controle IOT")
                 .setSubtitle("Desbloqueio seu app")
                 .setNegativeButtonText("Usar Pin")
                 .build();
-
-        //biometricPrompt.authenticate(promptInfo);
 
         String jSon = lerCfgServidor();
         if(!jSon.trim().isEmpty()) {
@@ -139,39 +158,41 @@ public class LoginActivity extends AppCompatActivity implements IMqttMessageList
                     userBio = login.getUser();
                     passwBio = login.getPass();
                     biometricPrompt.authenticate(promptInfo);
-                    salvarCfgServidor("");
-                    loginButton.setVisibility(View.INVISIBLE);
+                    //salvarCfgServidor("");
+                    loginButton.setEnabled(true);
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    String sExtra[] =  login.getUuidIOTs().toArray(new String[0]);
+                    intent.putExtra("uuids",sExtra);
+                    intent.putExtra("idGerado",idGerado);
+                    intent.putExtra("user",user);
+                    startActivity(intent);
+                    //loginButton.setVisibility(View.INVISIBLE);
                     usernameEditText.setText(userBio);
                     passwordEditText.setText(passwBio);
+                    this.runOnUiThread(() -> Toast.makeText(la,"Login salvo encontrado, buscando IOTs",Toast.LENGTH_LONG).show());
+
                 }
                 else
-                    jSon = "";
+                    this.runOnUiThread(() -> Toast.makeText(la,"Login/Senha incorretos!",Toast.LENGTH_LONG).show());
+
             }
             catch (Exception e){
-                jSon = "";
+                this.runOnUiThread(() -> Toast.makeText(la,"Erro:"+e.getMessage(),Toast.LENGTH_LONG).show());
             }
         }
         if(jSon.trim().isEmpty()) {
+            this.runOnUiThread(() -> Toast.makeText(la,"Configuração não encontrada!",Toast.LENGTH_LONG).show());
 
-            //Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-            //startActivity(intent);
 
-            loginViewModel.getLoginFormState().observe(this, new Observer<LoginFormState>() {
-                @Override
-                public void onChanged(@Nullable LoginFormState loginFormState) {
-                    if (loginFormState == null) {
-                        return;
-                    }
-                    loginButton.setEnabled(loginFormState.isDataValid());
-                    if (loginFormState.getUsernameError() != null) {
-                        usernameEditText.setError(getString(loginFormState.getUsernameError()));
-                    }
-                    if (loginFormState.getPasswordError() != null) {
-                        passwordEditText.setError(getString(loginFormState.getPasswordError()));
-                    }
-                }
-            });
+
         }
+
+
+
+
+        //biometricPrompt.authenticate(promptInfo);
+
+
 
         loginViewModel.getLoginResult().observe(this, new Observer<LoginResult>() {
             @Override

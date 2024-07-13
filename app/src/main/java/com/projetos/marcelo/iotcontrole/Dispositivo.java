@@ -1,10 +1,22 @@
 package com.projetos.marcelo.iotcontrole;
 
+import android.graphics.drawable.Drawable;
+import android.view.View;
 import android.widget.Button;
 
 import com.google.gson.annotations.Expose;
 
 public class Dispositivo {
+    public void copyDispositivo(Status status, TipoIOT genero, Status nivelAcionamento, Integer id, String nick, String idpool, String nickServidor, String endServidor) {
+        this.status = status;
+        this.genero = genero;
+        this.nivelAcionamento = nivelAcionamento;
+        this.id = id;
+        this.nick = nick;
+        this.idpool = idpool;
+        this.nickServidor = nickServidor;
+        this.endServidor = endServidor;
+    }
 
     @Expose(serialize = true)
     private Status status;
@@ -30,6 +42,28 @@ public class Dispositivo {
     private String endServidor;
 
     private Button button;
+
+    private Drawable img;
+
+    private Boolean criado = false;
+
+    private View view;
+
+    public Boolean getCriado() {
+        return criado;
+    }
+
+    public void setCriado(Boolean criado) {
+        this.criado = criado;
+    }
+
+    public Drawable getImg() {
+        return img;
+    }
+
+    public void setImg(Drawable img) {
+        this.img = img;
+    }
 
     public Button getButton() {
         return button;
@@ -122,5 +156,13 @@ public class Dispositivo {
 
     public void setEndServidor(String endServidor) {
         this.endServidor = endServidor;
+    }
+
+    public View getView() {
+        return view;
+    }
+
+    public void setView(View view) {
+        this.view = view;
     }
 }

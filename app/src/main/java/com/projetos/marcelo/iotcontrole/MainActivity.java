@@ -127,7 +127,8 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
                         }
                     }.start();
                 }
-                arrayAdapter = new CustomAdapter(activity, dispositivos, clienteMQTT,idGerado);
+
+                arrayAdapter = new CustomAdapter(activity, dispositivos, clienteMQTT,idGerado,activity);
                 simpleList.setAdapter(arrayAdapter);
                 monitora();
             }
@@ -168,42 +169,15 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
         }
     }
 
-    public Drawable putImagem(Dispositivo dispositivo){
-        Drawable img = null;
-        switch (dispositivo.getGenero().getValor()){
-            case  1:
-                img = (dispositivo.getStatus().equals(Status.ON) && dispositivo.getNivelAcionamento().equals(Status.HIGH)) ||
-                        (dispositivo.getStatus().equals(Status.OFF) && dispositivo.getNivelAcionamento().equals(Status.LOW))
-                        ? activity.getResources().getDrawable(R.drawable.lacessa)
-                        :  activity.getResources().getDrawable(R.drawable.b983w);
-                break;
-            case 15:
-                img = activity.getResources().getDrawable(R.drawable.pushbutton);
-                break;
-            case 11:
-            default:
-                img = (dispositivo.getStatus().equals(Status.ON)&& dispositivo.getNivelAcionamento().equals(Status.HIGH)) ||
-                        (dispositivo.getStatus().equals(Status.OFF) && dispositivo.getNivelAcionamento().equals(Status.LOW))
-                        ? activity.getResources().getDrawable(R.drawable.intligado)
-                        :  activity.getResources().getDrawable(R.drawable.intdesligado);
-                break;
-        }
-        return img;
-    }
 
     @SuppressLint("UseCompatLoadingForDrawables")
+    @SuppressWarnings("UnstableApiUsage")
     public synchronized void handleEvent(String json) {
-        List<Pool> pools = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss").create()
+        List<Pool> pools = new GsonBuilder().setDateFormat("dd/MM/yyyy HH:mm:ss")
+                .create()
                 .fromJson(json, new TypeToken<ArrayList<Pool>>() {}.getType());
-
-        for (Pool pool : pools) {
-            for (Dispositivo dispositivo : pool.getDispositivos()) {
-                Button btn = arrayAdapter.getItemByIdPoolIdDisp(pool.getId(), dispositivo.getId());
-                Drawable img = putImagem(dispositivo);
-                img.setBounds(0, 0, 60, 60);
-                btn.setCompoundDrawables(img, null, null, null);
-            }
-        }
+        for (Pool pool : pools)
+            arrayAdapter.atualizaEstadoDispositivo(pool.getDispositivos(),pool.getId());
     }
 
     public synchronized void acrescentarServidorIOT(String jSon) {
@@ -230,8 +204,10 @@ public class MainActivity extends AppCompatActivity implements IMqttMessageListe
                                     break;
                                 }
                             }
-                            if (!naLista)
+                            if (!naLista) {
+
                                 dispositivos.add(dispositivo);
+                            }
                         }
                     }
                     activity.runOnUiThread(() -> arrayAdapter.notifyDataSetChanged());
